@@ -5,6 +5,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -12,11 +14,14 @@ import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
 
 import java.io.*;
+import java.util.Objects;
 
 public class TextEditor extends Application {
     public static CodeArea codeArea;
     static Stage primaryStage;
     static File currentFile = null;
+    static boolean isChanged = false;
+    static Scene scene;
 
     @Override
     public void start(Stage primaryStage) {
@@ -28,22 +33,26 @@ public class TextEditor extends Application {
         MenuBar menuBar = new MenuBar();
 
         codeArea.setParagraphGraphicFactory(LineNumberFactory.get(codeArea));
+        codeArea.textProperty().addListener((_, _, _) -> isChanged = true);
 
         Menu fileMenu = new Menu("File");
         fileMenu.getItems().addAll(new MenuItem("New"), new MenuItem("Open"), new MenuItem("Save"), new MenuItem("Save As"), new MenuItem("Exit"));
         Menu editMenu = new Menu("Edit");
         editMenu.getItems().addAll(new MenuItem("Cut"), new MenuItem("Copy"), new MenuItem("Paste"), new MenuItem("Select All"));
+        Menu themeMenu = new Menu("Theme");
+        themeMenu.getItems().addAll(new MenuItem("Dark Theme"), new MenuItem("Light Theme"));
 
         fileMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
         editMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
+        themeMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
 
-        menuBar.getMenus().addAll(fileMenu, editMenu);
+        menuBar.getMenus().addAll(fileMenu, editMenu, themeMenu);
         vBox.getChildren().addAll(menuBar, codeArea);
         VBox.setVgrow(codeArea, javafx.scene.layout.Priority.ALWAYS);
 
-        Scene scene = new Scene(vBox, 800, 600);
+        scene = new Scene(vBox, 800, 600);
 
-        scene.getStylesheets().add(TextEditor.class.getResource("TextEditor.css").toExternalForm());
+        scene.getStylesheets().add(Objects.requireNonNull(TextEditor.class.getResource("LightTheme.css")).toExternalForm());
 
         primaryStage.setScene(scene);
         primaryStage.show();
@@ -106,6 +115,41 @@ public class TextEditor extends Application {
         else {
             System.out.println("No file selected");
         }
+    }
+
+    public static void cut() {
+        copy();
+        codeArea.deleteText(codeArea.getSelection());
+    }
+
+    public static void copy() {
+        String selectedText = codeArea.getSelectedText();
+            if (!selectedText.isEmpty()) {
+            ClipboardContent content = new ClipboardContent();
+            content.putString(selectedText);
+            Clipboard.getSystemClipboard().setContent(content);
+        }
+    }
+
+    public static void paste() {
+        Clipboard clipboard = Clipboard.getSystemClipboard();
+        if (clipboard.hasString()) {
+            codeArea.insertText(codeArea.getCaretPosition(), clipboard.getString());
+        }
+    }
+
+    public static void selectAll() {
+        codeArea.selectAll();
+    }
+
+    public static void changeLightTheme() {
+        scene.getStylesheets().clear();
+        scene.getStylesheets().add(Objects.requireNonNull(TextEditor.class.getResource("LightTheme.css")).toExternalForm());
+    }
+
+    public static void changeDarkTheme() {
+        scene.getStylesheets().clear();
+        scene.getStylesheets().add(Objects.requireNonNull(TextEditor.class.getResource("DarkTheme.css")).toExternalForm());
     }
 
     public static void main(String[] args) {

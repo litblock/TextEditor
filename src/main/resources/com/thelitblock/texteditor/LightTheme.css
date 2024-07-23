@@ -1,0 +1,31 @@
+.root {
+    -fx-base: #eeeeee;
+    -fx-control-inner-background: #ffffff;
+    -fx-background-color: #f4f4f4;
+    -fx-menu-bar-border: #cccccc;
+    -fx-selection-bar: #d3d3d3;
+    -fx-focus-color: #c0c0c0;
+}
+
+.code-area {
+    -fx-font-family: "Courier New";
+    -fx-font-size: 14px;
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #000000;
+}
+
+.lineno {
+    -fx-fill: #777777;
+}
+
+.menu-bar {
+    -fx-background-color: #f0f0f0;
+}
+
+.menu {
+    -fx-text-fill: #333333;
+}
+
+.menu-item {
+    -fx-text-fill: #333333;
+}

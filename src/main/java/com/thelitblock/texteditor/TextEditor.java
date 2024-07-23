@@ -10,18 +10,18 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 
 public class TextEditor extends Application {
+    public static TextArea textArea = new TextArea();
+    static Stage primaryStage;
+
     @Override
     public void start(Stage primaryStage) {
+        TextEditor.primaryStage = primaryStage;
         primaryStage.setTitle("Text Editor");
 
         VBox vBox = new VBox();
-        TextArea textArea = new TextArea();
         MenuBar menuBar = new MenuBar();
 
         Menu fileMenu = new Menu("File");
@@ -34,8 +34,10 @@ public class TextEditor extends Application {
 
         menuBar.getMenus().addAll(fileMenu, editMenu);
         vBox.getChildren().addAll(menuBar, textArea);
+        VBox.setVgrow(textArea, javafx.scene.layout.Priority.ALWAYS);
 
         Scene scene = new Scene(vBox, 800, 600);
+
         primaryStage.setScene(scene);
         primaryStage.show();
     }
@@ -50,12 +52,32 @@ public class TextEditor extends Application {
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    System.out.println(line);
-                    //implement text area to display
+                    textArea.appendText(line + "\n");
+                    primaryStage.setTitle(file.getName());
                 }
             }
             catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("Error reading file");
+            }
+        }
+        else {
+            System.out.println("No file selected");
+        }
+    }
+
+    public static void saveFile() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save File");
+        File file = fileChooser.showSaveDialog(new Stage());
+
+        if (file != null) {
+            System.out.println("File saved");
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+                writer.write(textArea.getText());
+                primaryStage.setTitle(file.getName());
+            }
+            catch (IOException e) {
+                System.out.println("Error writing file");
             }
         }
         else {

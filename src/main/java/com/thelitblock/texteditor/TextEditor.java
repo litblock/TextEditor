@@ -9,20 +9,25 @@ import javafx.scene.control.TextArea;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.fxmisc.richtext.CodeArea;
+import org.fxmisc.richtext.LineNumberFactory;
 
 import java.io.*;
 
 public class TextEditor extends Application {
-    public static TextArea textArea = new TextArea();
+    public static CodeArea codeArea;
     static Stage primaryStage;
 
     @Override
     public void start(Stage primaryStage) {
         TextEditor.primaryStage = primaryStage;
+        codeArea = new CodeArea();
         primaryStage.setTitle("Text Editor");
 
         VBox vBox = new VBox();
         MenuBar menuBar = new MenuBar();
+
+        codeArea.setParagraphGraphicFactory(LineNumberFactory.get(codeArea));
 
         Menu fileMenu = new Menu("File");
         fileMenu.getItems().addAll(new MenuItem("New"), new MenuItem("Open"), new MenuItem("Save"), new MenuItem("Save As"), new MenuItem("Exit"));
@@ -33,11 +38,11 @@ public class TextEditor extends Application {
         editMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
 
         menuBar.getMenus().addAll(fileMenu, editMenu);
-        vBox.getChildren().addAll(menuBar, textArea);
-        VBox.setVgrow(textArea, javafx.scene.layout.Priority.ALWAYS);
+        vBox.getChildren().addAll(menuBar, codeArea);
+        VBox.setVgrow(codeArea, javafx.scene.layout.Priority.ALWAYS);
 
         Scene scene = new Scene(vBox, 800, 600);
-
+        scene.getStylesheets().add("TextEditor.css");
         primaryStage.setScene(scene);
         primaryStage.show();
     }
@@ -50,9 +55,10 @@ public class TextEditor extends Application {
         if (file != null) {
             System.out.println("File selected");
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                codeArea.clear();
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    textArea.appendText(line + "\n");
+                    codeArea.appendText(line + "\n");
                     primaryStage.setTitle(file.getName());
                 }
             }
@@ -73,7 +79,7 @@ public class TextEditor extends Application {
         if (file != null) {
             System.out.println("File saved");
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-                writer.write(textArea.getText());
+                writer.write(codeArea.getText());
                 primaryStage.setTitle(file.getName());
             }
             catch (IOException e) {

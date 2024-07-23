@@ -5,7 +5,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.TextArea;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -17,6 +16,7 @@ import java.io.*;
 public class TextEditor extends Application {
     public static CodeArea codeArea;
     static Stage primaryStage;
+    static File currentFile = null;
 
     @Override
     public void start(Stage primaryStage) {
@@ -42,7 +42,9 @@ public class TextEditor extends Application {
         VBox.setVgrow(codeArea, javafx.scene.layout.Priority.ALWAYS);
 
         Scene scene = new Scene(vBox, 800, 600);
-        scene.getStylesheets().add("TextEditor.css");
+
+        scene.getStylesheets().add(TextEditor.class.getResource("TextEditor.css").toExternalForm());
+
         primaryStage.setScene(scene);
         primaryStage.show();
     }
@@ -50,17 +52,17 @@ public class TextEditor extends Application {
     public static void displayFile() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open File");
-        File file = fileChooser.showOpenDialog(new Stage());
+        File file = fileChooser.showOpenDialog(primaryStage);
 
         if (file != null) {
-            System.out.println("File selected");
+            currentFile = file;
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
                 codeArea.clear();
                 String line;
                 while ((line = reader.readLine()) != null) {
                     codeArea.appendText(line + "\n");
-                    primaryStage.setTitle(file.getName());
                 }
+                primaryStage.setTitle(file.getName());
             }
             catch (IOException e) {
                 System.out.println("Error reading file");
@@ -72,6 +74,21 @@ public class TextEditor extends Application {
     }
 
     public static void saveFile() {
+        if (currentFile == null || currentFile.getName().equals("Text Editor") || currentFile.getName().equals("Untitled")) {
+            saveAsFile();
+        }
+        else {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(currentFile))) {
+                writer.write(codeArea.getText());
+                primaryStage.setTitle(currentFile.getName());
+            }
+            catch (IOException e) {
+                System.out.println("Error writing file");
+            }
+        }
+    }
+
+    public static void saveAsFile() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save File");
         File file = fileChooser.showSaveDialog(new Stage());

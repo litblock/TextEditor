@@ -17,6 +17,9 @@ public class MenuEventHandler implements EventHandler<ActionEvent> {
         else if (mItem.getText().equals("Save")) {
             TextEditor.saveFile();
         }
+        else if (mItem.getText().equals("Save as")) {
+            TextEditor.saveAsFile();
+        }
     }
 }
 

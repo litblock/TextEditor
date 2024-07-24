@@ -16,6 +16,8 @@ import org.fxmisc.richtext.LineNumberFactory;
 import java.io.*;
 import java.util.Objects;
 
+import static com.thelitblock.texteditor.SyntaxHighlighting.computeHighlighting;
+
 public class TextEditor extends Application {
     public static CodeArea codeArea;
     static Stage primaryStage;
@@ -27,13 +29,11 @@ public class TextEditor extends Application {
     public void start(Stage primaryStage) {
         TextEditor.primaryStage = primaryStage;
         codeArea = new CodeArea();
+        codeArea.setId("codeArea");
         primaryStage.setTitle("Text Editor");
 
         VBox vBox = new VBox();
         MenuBar menuBar = new MenuBar();
-
-        codeArea.setParagraphGraphicFactory(LineNumberFactory.get(codeArea));
-        codeArea.textProperty().addListener((_, _, _) -> isChanged = true);
 
         Menu fileMenu = new Menu("File");
         fileMenu.getItems().addAll(new MenuItem("New"), new MenuItem("Open"), new MenuItem("Save"), new MenuItem("Save As"), new MenuItem("Exit"));
@@ -46,6 +46,15 @@ public class TextEditor extends Application {
         editMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
         themeMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
 
+        codeArea.setParagraphGraphicFactory(LineNumberFactory.get(codeArea));
+        codeArea.textProperty().addListener((observable, oldValue, newValue) -> isChanged = true);
+        codeArea.richChanges()
+            .filter(ch -> !ch.getInserted().equals(ch.getRemoved()))
+            .subscribe(change -> {
+               codeArea.setStyleSpans(0, computeHighlighting(codeArea.getText()));
+        });
+        codeArea.getStyleClass().add("codeArea");
+
         menuBar.getMenus().addAll(fileMenu, editMenu, themeMenu);
         vBox.getChildren().addAll(menuBar, codeArea);
         VBox.setVgrow(codeArea, javafx.scene.layout.Priority.ALWAYS);
@@ -53,7 +62,6 @@ public class TextEditor extends Application {
         scene = new Scene(vBox, 800, 600);
 
         scene.getStylesheets().add(Objects.requireNonNull(TextEditor.class.getResource("LightTheme.css")).toExternalForm());
-
         primaryStage.setScene(scene);
         primaryStage.show();
     }

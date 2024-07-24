@@ -2,6 +2,7 @@ module com.thelitblock.texteditor {
     requires javafx.controls;
     requires javafx.fxml;
     requires javafx.web;
+    requires reactfx;
 
     requires org.controlsfx.controls;
     requires org.kordamp.bootstrapfx.core;

@@ -8,10 +8,13 @@
 }
 
 .code-area {
+    -fx-background-color: #ffffff;
+}
+
+#codeArea .text{
     -fx-font-family: "Courier New";
     -fx-font-size: 14px;
-    -fx-background-color: #ffffff;
-    -fx-text-fill: #000000;
+    -fx-fill: #000000;
 }
 
 .lineno {
@@ -28,4 +31,8 @@
 
 .menu-item {
     -fx-text-fill: #333333;
+}
+
+.keyword {
+    -fx-fill: #0000ff;
 }

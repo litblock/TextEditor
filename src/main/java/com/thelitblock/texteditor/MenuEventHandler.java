@@ -30,9 +30,6 @@ public class MenuEventHandler implements EventHandler<ActionEvent> {
                 if (result.isPresent() && result.get() == btnSave) {
                     TextEditor.saveFile();
                 }
-                else if (result.isPresent() && result.get() == btnCancel) {
-                    System.exit(0);
-                }
             }
             if ("Exit".equals(mItem.getText())) {
                 System.exit(0);

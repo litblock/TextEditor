@@ -8,6 +8,7 @@ module com.thelitblock.texteditor {
     requires org.kordamp.bootstrapfx.core;
     requires eu.hansolo.tilesfx;
     requires org.fxmisc.richtext;
+    requires org.fxmisc.flowless;
 
     opens com.thelitblock.texteditor to javafx.fxml;
     exports com.thelitblock.texteditor;

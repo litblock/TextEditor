@@ -30,7 +30,6 @@ public class SyntaxHighlighting {
     private static final String SEMICOLON_PATTERN = "\\;";
     private static final String STRING_PATTERN = "\"([^\"\\\\]|\\\\.)*\"";
     private static final String COMMENT_PATTERN = "//[^\n]*" + "|" + "/\\*(.|\\R)*?\\*/";
-    private static final String LITERAL_PATTERN = "\\b\\d+\\b"; // Simple pattern for numbers
     private static final String FUNCTION_PATTERN = "\\b[a-zA-Z_][a-zA-Z_0-9]*\\s*(?=\\()";
     private static final String NUMBER_PATTERN = "\\b\\d+\\b";
     private static final String ANNOTATION_PATTERN = "@[a-zA-Z_][a-zA-Z_0-9]*";
@@ -46,7 +45,6 @@ public class SyntaxHighlighting {
         + "|(?<SEMICOLON>" + SEMICOLON_PATTERN + ")"
         + "|(?<STRING>" + STRING_PATTERN + ")"
         + "|(?<COMMENT>" + COMMENT_PATTERN + ")"
-        + "|(?<LITERAL>" + LITERAL_PATTERN + ")"
         + "|(?<FUNCTION>" + FUNCTION_PATTERN + ")"
         + "|(?<NUMBER>" + NUMBER_PATTERN + ")"
         + "|(?<ANNOTATION>" + ANNOTATION_PATTERN + ")"
@@ -79,7 +77,6 @@ public class SyntaxHighlighting {
                 matcher.group("SEMICOLON") != null ? "semicolon" :
                 matcher.group("STRING") != null ? "string" :
                 matcher.group("COMMENT") != null ? "comment" :
-                matcher.group("LITERAL") != null ? "literal" :
                 matcher.group("FUNCTION") != null ? "function" :
                 matcher.group("NUMBER") != null ? "number" :
                 matcher.group("ANNOTATION") != null ? "annotation" :
@@ -92,7 +89,7 @@ public class SyntaxHighlighting {
     }
 
     private static String determinePeriodStyleClass(int periodIndex, String text) {
-        int startIndex = Math.max(0, periodIndex - 40); // Extend snippet for context
+        int startIndex = Math.max(0, periodIndex - 40);
         int endIndex = Math.min(text.length(), periodIndex + 40);
         String snippet = text.substring(startIndex, endIndex);
 

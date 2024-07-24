@@ -10,8 +10,10 @@ import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.fxmisc.flowless.VirtualizedScrollPane;
 import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
+import org.fxmisc.richtext.NavigationActions;
 
 import java.io.*;
 import java.util.Objects;
@@ -30,6 +32,9 @@ public class TextEditor extends Application {
         TextEditor.primaryStage = primaryStage;
         codeArea = new CodeArea();
         codeArea.setId("codeArea");
+
+        VirtualizedScrollPane<CodeArea> virtualizedScrollPane = new VirtualizedScrollPane<>(codeArea);
+
         primaryStage.setTitle("Text Editor");
 
         VBox vBox = new VBox();
@@ -56,8 +61,8 @@ public class TextEditor extends Application {
         codeArea.getStyleClass().add("codeArea");
 
         menuBar.getMenus().addAll(fileMenu, editMenu, themeMenu);
-        vBox.getChildren().addAll(menuBar, codeArea);
-        VBox.setVgrow(codeArea, javafx.scene.layout.Priority.ALWAYS);
+        vBox.getChildren().addAll(menuBar, virtualizedScrollPane);
+        VBox.setVgrow(virtualizedScrollPane, javafx.scene.layout.Priority.ALWAYS);
 
         scene = new Scene(vBox, 800, 600);
 

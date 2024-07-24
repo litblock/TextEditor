@@ -84,6 +84,11 @@
     -fx-fill: #e5c07b;
 }
 
+#codeArea .global-variable {
+    -fx-fill: #e06c75;
+}
+
+
 #codeArea .period {
     -fx-fill: #999999;
 }

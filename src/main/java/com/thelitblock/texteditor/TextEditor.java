@@ -1,12 +1,11 @@
 package com.thelitblock.texteditor;
 
 import javafx.application.Application;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Menu;
-import javafx.scene.control.MenuBar;
-import javafx.scene.control.MenuItem;
-import javafx.scene.input.Clipboard;
-import javafx.scene.input.ClipboardContent;
+import javafx.scene.control.*;
+import javafx.scene.input.*;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -14,7 +13,6 @@ import org.fxmisc.flowless.VirtualizedScrollPane;
 import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
 import javafx.scene.text.Font;
-import javafx.geometry.Insets;
 
 import java.io.*;
 import java.util.Objects;
@@ -32,6 +30,7 @@ public class TextEditor extends Application {
     public void start(Stage primaryStage) {
         TextEditor.primaryStage = primaryStage;
         codeArea = new CodeArea();
+
         codeArea.setId("codeArea");
 
         VirtualizedScrollPane<CodeArea> virtualizedScrollPane = new VirtualizedScrollPane<>(codeArea);
@@ -64,13 +63,32 @@ public class TextEditor extends Application {
         });
         codeArea.getStyleClass().add("codeArea");
 
+        HBox searchBar = new HBox(5);
+        TextField searchText = new TextField();
+        Button findNext = new Button("Next");
+        Button findPrevious = new Button("Previous");
+        searchBar.getChildren().addAll(new Label("Find:"), searchText, findNext, findPrevious);
+        searchBar.setAlignment(Pos.CENTER_LEFT);
+        searchBar.setVisible(false);
+
         menuBar.getMenus().addAll(fileMenu, editMenu, themeMenu);
-        vBox.getChildren().addAll(menuBar, virtualizedScrollPane);
+        vBox.getChildren().addAll(menuBar, searchBar, virtualizedScrollPane);
         VBox.setVgrow(virtualizedScrollPane, javafx.scene.layout.Priority.ALWAYS);
 
         scene = new Scene(vBox, 800, 600);
 
         scene.getStylesheets().add(Objects.requireNonNull(TextEditor.class.getResource("DarkTheme.css")).toExternalForm());
+
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            final KeyCombination keyComb = new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN);
+            if (keyComb.match(event)) {
+                searchBar.setVisible(!searchBar.isVisible());
+                if (searchBar.isVisible()) {
+                    searchText.requestFocus();
+                }
+                event.consume();
+            }
+        });
 
         primaryStage.setScene(scene);
         primaryStage.show();

@@ -35,7 +35,7 @@ public class SyntaxHighlighting {
     private static final String ANNOTATION_PATTERN = "@[a-zA-Z_][a-zA-Z_0-9]*";
     private static final String VARIABLE_PATTERN = "\\b[a-zA-Z_][a-zA-Z_0-9]*\\b";
     private static final String PERIOD_PATTERN = "\\.";
-    private static final String OPERATOR_PATTERN = "[+\\-*/%&|^~<>!=]=?|->";
+    private static final String OPERATOR_PATTERN = "[+\\-*/%&|^~<>!=]=?|->:|&&|\\|\\||\\?|:";
 
     private static final String STRING_LITERAL_PATTERN = "\"([^\"\\\\]|\\\\.)*\"";
     private static final String BOOLEAN_LITERAL_PATTERN = "\\b(true|false)\\b";
@@ -45,9 +45,8 @@ public class SyntaxHighlighting {
     private static final String DOUBLE_LITERAL_PATTERN = "\\b\\d+(_\\d+)*\\.\\d+(_\\d+)*(d|D)?\\b";
     private static final String LONG_LITERAL_PATTERN = "\\b\\d+(_\\d+)*[lL]\\b";
 
-
     private static final Pattern PATTERN = Pattern.compile(
-    "(?<KEYWORD>" + KEYWORD_PATTERN + ")"
+        "(?<KEYWORD>" + KEYWORD_PATTERN + ")"
         + "|(?<PAREN>" + PAREN_PATTERN + ")"
         + "|(?<BRACE>" + BRACE_PATTERN + ")"
         + "|(?<BRACKET>" + BRACKET_PATTERN + ")"
@@ -68,6 +67,7 @@ public class SyntaxHighlighting {
         + "|(?<COMMA>" + COMMA_PATTERN + ")"
         + "|(?<PERIOD>" + PERIOD_PATTERN + ")"
     );
+
 
 
     public static StyleSpans<Collection<String>> computeHighlighting(String text) {

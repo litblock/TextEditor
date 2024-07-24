@@ -13,7 +13,8 @@ import javafx.stage.Stage;
 import org.fxmisc.flowless.VirtualizedScrollPane;
 import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
-import org.fxmisc.richtext.NavigationActions;
+import javafx.scene.text.Font;
+import javafx.geometry.Insets;
 
 import java.io.*;
 import java.util.Objects;
@@ -36,6 +37,9 @@ public class TextEditor extends Application {
         VirtualizedScrollPane<CodeArea> virtualizedScrollPane = new VirtualizedScrollPane<>(codeArea);
 
         primaryStage.setTitle("Text Editor");
+        Font menloFont = Font.loadFont(Objects.requireNonNull(getClass().getResourceAsStream("Menlo-Regular.woff")), 12);
+        codeArea.setStyle("-fx-font-family: 'Menlo'; -fx-font-size: 10pt");
+        //codeArea.setPadding(new Insets(0, 20, 0, 0));
 
         VBox vBox = new VBox();
         MenuBar menuBar = new MenuBar();
@@ -67,6 +71,7 @@ public class TextEditor extends Application {
         scene = new Scene(vBox, 800, 600);
 
         scene.getStylesheets().add(Objects.requireNonNull(TextEditor.class.getResource("DarkTheme.css")).toExternalForm());
+
         primaryStage.setScene(scene);
         primaryStage.show();
     }

@@ -12,14 +12,14 @@
 }
 
 #codeArea .text {
-    -fx-font-family: 'Consolas', 'monospace';
-    -fx-font-size: 12pt;
+    -fx-font-family: 'Menlo Regular', 'monospace';
+    -fx-font-size: 10pt;
     -fx-text-fill: #abb2bf;
 }
 
 .lineno {
     -fx-border-color: transparent transparent transparent #4d4d4d;
-    -fx-background-color: #3b4149;
+    -fx-background-color: transparent;
 }
 
 .menu-bar {
@@ -39,9 +39,14 @@
 }
 
 .scroll-bar {
+    -fx-pref-width: 10px;
     -fx-background-color: transparent;
     -fx-padding: 0;
     -fx-background: transparent;
+}
+
+.scroll-bar:horizontal {
+    -fx-pref-height: 10px;
 }
 
 .scroll-bar .increment-button,
@@ -59,24 +64,8 @@
     -fx-fill: #c678dd;
 }
 
-#codeArea .paren {
+#codeArea .paren, #codeArea .brace, #codeArea .bracket, #codeArea .semicolon {
     -fx-fill: #abb2bf;
-}
-
-#codeArea .brace {
-    -fx-fill: #abb2bf;
-}
-
-#codeArea .bracket {
-    -fx-fill: #abb2bf;
-}
-
-#codeArea .semicolon {
-    -fx-fill: #abb2bf;
-}
-
-#codeArea .string {
-    -fx-fill: #98c379;
 }
 
 #codeArea .comment {
@@ -106,3 +95,48 @@
 #codeArea .method-call-period {
     -fx-fill: #999999;
 }
+
+#codeArea .operator {
+    -fx-fill: #61afef;
+}
+
+#codeArea .number {
+    -fx-fill: #d19a66;
+}
+
+#codeArea .comma {
+    -fx-fill: #abb2bf;
+}
+
+/* literals */
+
+#codeArea .string {
+    -fx-fill: #98c379;
+}
+
+#codeArea .boolean {
+    -fx-fill: #e06c75;
+}
+
+#codeArea .character {
+    -fx-fill: #e06c75;
+}
+
+#codeArea .integer {
+    -fx-fill: #d19a66;
+}
+
+#codeArea .float {
+    -fx-fill: #d19a66;
+}
+
+#codeArea .double {
+    -fx-fill: #d19a66;
+}
+
+#codeArea .long {
+    -fx-fill: #d19a66;
+}
+
+
+

@@ -61,7 +61,7 @@ public class TextEditor extends Application {
 
         scene = new Scene(vBox, 800, 600);
 
-        scene.getStylesheets().add(Objects.requireNonNull(TextEditor.class.getResource("LightTheme.css")).toExternalForm());
+        scene.getStylesheets().add(Objects.requireNonNull(TextEditor.class.getResource("DarkTheme.css")).toExternalForm());
         primaryStage.setScene(scene);
         primaryStage.show();
     }

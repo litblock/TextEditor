@@ -33,6 +33,6 @@
     -fx-text-fill: #333333;
 }
 
-.keyword {
+#codeArea .keyword {
     -fx-fill: #0000ff;
 }

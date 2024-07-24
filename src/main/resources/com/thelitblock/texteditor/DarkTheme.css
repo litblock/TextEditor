@@ -1,25 +1,26 @@
+
 .root {
     -fx-base: #444444;
     -fx-control-inner-background: #333333;
-    -fx-background-color: #2b2b2b;
+    -fx-background-color: #282c34;
     -fx-menu-bar-border: #4d4d4d;
     -fx-selection-bar: #4d4d4d;
-    -fx-focus-color: #039ED3;
+    -fx-focus-color: #528bff;
 }
 
 .code-area {
-    -fx-background-color: #2b2b2b;
+    -fx-background-color: #282c34;
 }
 
-#codeArea .text{
-    -fx-font-family: "Courier New";
-    -fx-font-size: 14px;
-    -fx-fill: #ccf9ff;
+#codeArea .text {
+    -fx-font-family: 'Consolas', 'monospace';
+    -fx-font-size: 12pt;
+    -fx-text-fill: #abb2bf;
 }
 
 .lineno {
-    -fx-fill: #464545;
-    -fx-background-color: -fx-fill;
+    -fx-border-color: transparent transparent transparent #4d4d4d;
+    -fx-background-color: #3b4149;
 }
 
 .menu-bar {
@@ -34,6 +35,62 @@
     -fx-text-fill: #A9B7C6;
 }
 
-.keyword {
-    -fx-fill: #0000ff;
+#codeArea .keyword {
+    -fx-fill: #c678dd;
+}
+
+#codeArea .paren {
+    -fx-fill: #abb2bf;
+}
+
+#codeArea .brace {
+    -fx-fill: #abb2bf;
+}
+
+#codeArea .bracket {
+    -fx-fill: #abb2bf;
+}
+
+#codeArea .semicolon {
+    -fx-fill: #abb2bf;
+}
+
+#codeArea .string {
+    -fx-fill: #98c379;
+}
+
+#codeArea .comment {
+    -fx-fill: #5c6370;
+}
+
+#codeArea .literal {
+    -fx-fill: #d19a66;
+}
+
+#codeArea .function {
+    -fx-fill: #61afef;
+}
+
+#codeArea .number {
+    -fx-fill: #d19a66;
+}
+
+#codeArea .annotation {
+    -fx-fill: #e06c75;
+}
+
+#codeArea .variable {
+    -fx-fill: #e5c07b;
+}
+
+#codeArea .period {
+    -fx-fill: #999999;
+}
+
+#codeArea .import-period {
+    -fx-fill: #e5c07b;
+}
+
+#codeArea .method-call-period {
+    -fx-fill: #999999;
 }

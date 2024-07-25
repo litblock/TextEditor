@@ -7,15 +7,14 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.MenuItem;
 
+import java.util.Objects;
 import java.util.Optional;
-
-import static com.thelitblock.texteditor.TextEditor.isChanged;
 
 public class MenuEventHandler implements EventHandler<ActionEvent> {
     public void handle(ActionEvent e) {
         MenuItem mItem = (MenuItem) e.getSource();
         if ("New".equals(mItem.getText()) || "Open".equals(mItem.getText()) || "Exit".equals(mItem.getText())) {
-            if (isChanged) {
+            if (Objects.requireNonNull(TextEditor.getCurrentTabData()).isChanged) {
                 Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
                 alert.setTitle("Unsaved Changes");
                 alert.setHeaderText("You have unsaved changes.");
@@ -41,15 +40,12 @@ public class MenuEventHandler implements EventHandler<ActionEvent> {
         }
         else if ("Open".equals(mItem.getText())) {
             TextEditor.displayFile();
-            isChanged = false;
         }
         else if ("Save".equals(mItem.getText())) {
             TextEditor.saveFile();
-            isChanged = false;
         }
         else if ("Save as".equals(mItem.getText())) {
             TextEditor.saveAsFile();
-            isChanged = false;
         }
         else if ("Cut".equals(mItem.getText())) {
             TextEditor.cut();

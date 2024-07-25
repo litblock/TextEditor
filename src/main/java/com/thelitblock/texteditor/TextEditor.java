@@ -35,34 +35,35 @@ public class TextEditor extends Application {
         setupEditor();
         setupMenuBar();
         setupScene();
+        primaryStage.setTitle("TextEditor");
         primaryStage.show();
     }
 
     private void setupEditor() {
-        Tab defaultTab = createNewTab();
+        Tab defaultTab = createNewTab("Untitled");
         tabPane.getTabs().add(defaultTab);
-    
+
         Tab plusTab = new Tab("+");
         plusTab.setClosable(false);
         tabPane.getTabs().add(plusTab);
-    
+
         tabPane.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
             if (newTab == plusTab) {
-                Tab newTabToAdd = createNewTab();
+                Tab newTabToAdd = createNewTab("Untitled");
                 tabPane.getTabs().add(tabPane.getTabs().size() - 1, newTabToAdd);
                 tabPane.getSelectionModel().select(newTabToAdd);
             }
         });
     }
     
-    static Tab createNewTab() {
+    static Tab createNewTab(String title) {
         CodeArea codeArea = new CodeArea();
         codeArea.setId("codeArea");
         codeArea.setParagraphGraphicFactory(LineNumberFactory.get(codeArea));
-    
+
         Font menloFont = Font.loadFont(Objects.requireNonNull(TextEditor.class.getResourceAsStream("Menlo-Regular.woff")), 12);
         codeArea.setStyle("-fx-font-family: 'Menlo'; -fx-font-size: 10pt");
-    
+
         codeArea.textProperty().addListener((observable, oldValue, newValue) -> {
             Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
             TabData tabData = (TabData) currentTab.getUserData();
@@ -73,19 +74,19 @@ public class TextEditor extends Application {
                 }
             }
         });
-    
+
         codeArea.richChanges()
             .filter(ch -> !ch.getInserted().equals(ch.getRemoved()))
             .subscribe(change -> {
                 codeArea.setStyleSpans(0, computeHighlighting(codeArea.getText()));
             });
 
-        return getTab(codeArea);
+        return getTab(codeArea, title);
     }
 
-    private static Tab getTab(CodeArea codeArea) {
+    private static Tab getTab(CodeArea codeArea, String title) {
         VirtualizedScrollPane<CodeArea> virtualizedScrollPane = new VirtualizedScrollPane<>(codeArea);
-        Tab tab = new Tab("Untitled", virtualizedScrollPane);
+        Tab tab = new Tab(title, virtualizedScrollPane);
         TabData tabData = new TabData(codeArea);
         tab.setUserData(tabData);
 
@@ -186,12 +187,9 @@ public class TextEditor extends Application {
                     while ((line = reader.readLine()) != null) {
                         codeArea.appendText(line + "\n");
                     }
-                    primaryStage.setTitle(file.getName());
                     tabData.isChanged = false;
                     Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
-                    if (currentTab.getText().endsWith("*")) {
-                        currentTab.setText(currentTab.getText().substring(0, currentTab.getText().length() - 1));
-                    }
+                    currentTab.setText(file.getName());
                 }
             }
             catch (IOException e) {
@@ -202,6 +200,7 @@ public class TextEditor extends Application {
             System.out.println("No file selected");
         }
     }
+
 
     protected static TabData getCurrentTabData() {
         Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
@@ -224,9 +223,7 @@ public class TextEditor extends Application {
                     primaryStage.setTitle(currentFile.getName());
                     tabData.isChanged = false;
                     Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
-                    if (currentTab.getText().endsWith("*")) {
-                        currentTab.setText(currentTab.getText().substring(0, currentTab.getText().length() - 1));
-                    }
+                    currentTab.setText(currentFile.getName());
                 }
                 catch (IOException e) {
                     System.out.println("Error writing file");
@@ -250,9 +247,7 @@ public class TextEditor extends Application {
                     currentFile = file;
                     tabData.isChanged = false;
                     Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
-                    if (currentTab.getText().endsWith("*")) {
-                        currentTab.setText(currentTab.getText().substring(0, currentTab.getText().length() - 1));
-                    }
+                    currentTab.setText(file.getName());
                 }
                 catch (IOException e) {
                     System.out.println("Error writing file");

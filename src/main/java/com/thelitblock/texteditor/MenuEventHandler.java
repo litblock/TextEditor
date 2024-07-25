@@ -37,9 +37,7 @@ public class MenuEventHandler implements EventHandler<ActionEvent> {
         }
 
         if ("New".equals(mItem.getText())) {
-            TextEditor.codeArea.clear();
-            TextEditor.primaryStage.setTitle("Untitled");
-            isChanged = false;
+            TextEditor.tabPane.getTabs().add(TextEditor.createNewTab());
         }
         else if ("Open".equals(mItem.getText())) {
             TextEditor.displayFile();

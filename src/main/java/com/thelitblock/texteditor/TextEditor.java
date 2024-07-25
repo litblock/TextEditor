@@ -7,6 +7,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.fxmisc.flowless.VirtualizedScrollPane;
@@ -19,46 +20,60 @@ import java.util.Objects;
 import static com.thelitblock.texteditor.SyntaxHighlighting.computeHighlighting;
 
 public class TextEditor extends Application {
-    private final TabPane tabPane = new TabPane();
-    public static CodeArea codeArea;
+    static final TabPane tabPane = new TabPane();
     static Stage primaryStage;
-    static File currentFile = null;
     static boolean isChanged = false;
     static Scene scene;
     static HBox searchBar = new HBox();
     private TextField searchText;
     static MenuBar menuBar;
+    static File currentFile = null;
 
     @Override
     public void start(Stage primaryStage) {
         TextEditor.primaryStage = primaryStage;
         setupEditor();
         setupMenuBar();
-        setupSearchBar();
         setupScene();
         primaryStage.show();
     }
 
     private void setupEditor() {
-        Tab defaultTab = createNewTab("Untitled");
+        Tab defaultTab = createNewTab();
         tabPane.getTabs().add(defaultTab);
     }
 
-    private Tab createNewTab(String title) {
+    protected static Tab createNewTab() {
         CodeArea codeArea = new CodeArea();
         codeArea.setId("codeArea");
         codeArea.setParagraphGraphicFactory(LineNumberFactory.get(codeArea));
-        codeArea.richChanges().subscribe(change -> codeArea.setStyleSpans(0, computeHighlighting(codeArea.getText())));
+        Font menloFont = Font.loadFont(Objects.requireNonNull(TextEditor.class.getResourceAsStream("Menlo-Regular.woff")), 12);
         codeArea.setStyle("-fx-font-family: 'Menlo'; -fx-font-size: 10pt");
 
+        codeArea.setParagraphGraphicFactory(LineNumberFactory.get(codeArea));
+        codeArea.textProperty().addListener((observable, oldValue, newValue) -> {
+            Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+            isChanged = true;
+            if (!currentTab.getText().endsWith("*")) {
+                currentTab.setText(currentTab.getText() + "*");
+            }
+        });
+
+        codeArea.richChanges()
+            .filter(ch -> !ch.getInserted().equals(ch.getRemoved()))
+            .subscribe(change -> {
+               codeArea.setStyleSpans(0, computeHighlighting(codeArea.getText()));
+        });
+        codeArea.getStyleClass().add("codeArea");
+
         VirtualizedScrollPane<CodeArea> virtualizedScrollPane = new VirtualizedScrollPane<>(codeArea);
-        Tab tab = new Tab(title, virtualizedScrollPane);
+        Tab tab = new Tab("Untitled", virtualizedScrollPane);
         tab.setUserData(codeArea);
         return tab;
     }
 
     private void setupMenuBar() {
-        MenuBar menuBar = new MenuBar();
+        menuBar = new MenuBar();
         Menu fileMenu = new Menu("File");
         fileMenu.getItems().addAll(new MenuItem("New"), new MenuItem("Open"), new MenuItem("Save"), new MenuItem("Save As"), new MenuItem("Exit"));
         Menu editMenu = new Menu("Edit");
@@ -66,22 +81,29 @@ public class TextEditor extends Application {
         Menu themeMenu = new Menu("Theme");
         themeMenu.getItems().addAll(new MenuItem("Dark Theme"), new MenuItem("Light Theme"));
         menuBar.getMenus().addAll(fileMenu, editMenu, themeMenu);
-    }
 
-    private void setupSearchBar() {
+        fileMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
+        editMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
+        themeMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
+
         searchText = new TextField();
         Button findNext = new Button("Next");
         Button findPrevious = new Button("Previous");
         searchBar.getChildren().addAll(new Label("Find:"), searchText, findNext, findPrevious);
         searchBar.setAlignment(Pos.CENTER_LEFT);
         searchBar.setVisible(false);
+        menuBar.getMenus().add(new Menu("", searchBar));
     }
 
     private void setupScene() {
         VBox vBox = new VBox();
         Scene scene = new Scene(vBox, 800, 600);
+        vBox.getChildren().addAll(menuBar, tabPane);
+        VBox.setVgrow(tabPane, javafx.scene.layout.Priority.ALWAYS);
+        TextEditor.scene = scene;
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            if (new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN).match(event)) {
+            final KeyCombination keyComb = new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN);
+            if (keyComb.match(event)) {
                 searchBar.setVisible(!searchBar.isVisible());
                 if (searchBar.isVisible()) {
                     searchText.requestFocus();
@@ -89,11 +111,13 @@ public class TextEditor extends Application {
                 event.consume();
             }
         });
-        vBox.getChildren().addAll(new MenuBar(), tabPane);
-        VBox.setVgrow(tabPane, javafx.scene.layout.Priority.ALWAYS);
-        TextEditor.scene = scene;
         scene.getStylesheets().add(Objects.requireNonNull(TextEditor.class.getResource("DarkTheme.css")).toExternalForm());
         primaryStage.setScene(scene);
+    }
+
+    private static CodeArea getCurrentCodeArea() {
+        Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+        return currentTab != null ? (CodeArea) currentTab.getUserData() : null;
     }
 
     public static void displayFile() {
@@ -104,12 +128,15 @@ public class TextEditor extends Application {
         if (file != null) {
             currentFile = file;
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-                codeArea.clear();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    codeArea.appendText(line + "\n");
+                CodeArea codeArea = getCurrentCodeArea();
+                if (codeArea != null) {
+                    codeArea.clear();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        codeArea.appendText(line + "\n");
+                    }
+                    primaryStage.setTitle(file.getName());
                 }
-                primaryStage.setTitle(file.getName());
             }
             catch (IOException e) {
                 System.out.println("Error reading file");
@@ -121,16 +148,19 @@ public class TextEditor extends Application {
     }
 
     public static void saveFile() {
-        if (currentFile == null || currentFile.getName().equals("Text Editor") || currentFile.getName().equals("Untitled")) {
-            saveAsFile();
-        }
-        else {
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(currentFile))) {
-                writer.write(codeArea.getText());
-                primaryStage.setTitle(currentFile.getName());
+        CodeArea codeArea = getCurrentCodeArea();
+        if (codeArea != null) {
+            if (currentFile == null || currentFile.getName().equals("Text Editor") || currentFile.getName().equals("Untitled")) {
+                saveAsFile();
             }
-            catch (IOException e) {
-                System.out.println("Error writing file");
+            else {
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter(currentFile))) {
+                    writer.write(codeArea.getText());
+                    primaryStage.setTitle(currentFile.getName());
+                }
+                catch (IOException e) {
+                    System.out.println("Error writing file");
+                }
             }
         }
     }
@@ -138,16 +168,19 @@ public class TextEditor extends Application {
     public static void saveAsFile() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save File");
-        File file = fileChooser.showSaveDialog(new Stage());
+        File file = fileChooser.showSaveDialog(primaryStage);
 
         if (file != null) {
-            System.out.println("File saved");
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-                writer.write(codeArea.getText());
-                primaryStage.setTitle(file.getName());
-            }
-            catch (IOException e) {
-                System.out.println("Error writing file");
+            CodeArea codeArea = getCurrentCodeArea();
+            if (codeArea != null) {
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+                    writer.write(codeArea.getText());
+                    primaryStage.setTitle(file.getName());
+                    currentFile = file;
+                }
+                catch (IOException e) {
+                    System.out.println("Error writing file");
+                }
             }
         }
         else {
@@ -156,28 +189,40 @@ public class TextEditor extends Application {
     }
 
     public static void cut() {
-        copy();
-        codeArea.deleteText(codeArea.getSelection());
+        CodeArea codeArea = getCurrentCodeArea();
+        if (codeArea != null) {
+            copy();
+            codeArea.deleteText(codeArea.getSelection());
+        }
     }
 
     public static void copy() {
-        String selectedText = codeArea.getSelectedText();
+        CodeArea codeArea = getCurrentCodeArea();
+        if (codeArea != null) {
+            String selectedText = codeArea.getSelectedText();
             if (!selectedText.isEmpty()) {
-            ClipboardContent content = new ClipboardContent();
-            content.putString(selectedText);
-            Clipboard.getSystemClipboard().setContent(content);
+                ClipboardContent content = new ClipboardContent();
+                content.putString(selectedText);
+                Clipboard.getSystemClipboard().setContent(content);
+            }
         }
     }
 
     public static void paste() {
-        Clipboard clipboard = Clipboard.getSystemClipboard();
-        if (clipboard.hasString()) {
-            codeArea.insertText(codeArea.getCaretPosition(), clipboard.getString());
+        CodeArea codeArea = getCurrentCodeArea();
+        if (codeArea != null) {
+            Clipboard clipboard = Clipboard.getSystemClipboard();
+            if (clipboard.hasString()) {
+                codeArea.insertText(codeArea.getCaretPosition(), clipboard.getString());
+            }
         }
     }
 
     public static void selectAll() {
-        codeArea.selectAll();
+        CodeArea codeArea = getCurrentCodeArea();
+        if (codeArea != null) {
+            codeArea.selectAll();
+        }
     }
 
     public static void changeLightTheme() {

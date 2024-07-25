@@ -16,6 +16,7 @@ import org.fxmisc.richtext.LineNumberFactory;
 
 import java.io.*;
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.thelitblock.texteditor.SyntaxHighlighting.computeHighlighting;
 
@@ -40,11 +41,11 @@ public class TextEditor extends Application {
     private void setupEditor() {
         Tab defaultTab = createNewTab();
         tabPane.getTabs().add(defaultTab);
-
+    
         Tab plusTab = new Tab("+");
         plusTab.setClosable(false);
         tabPane.getTabs().add(plusTab);
-
+    
         tabPane.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
             if (newTab == plusTab) {
                 Tab newTabToAdd = createNewTab();
@@ -53,15 +54,15 @@ public class TextEditor extends Application {
             }
         });
     }
-
+    
     static Tab createNewTab() {
         CodeArea codeArea = new CodeArea();
         codeArea.setId("codeArea");
         codeArea.setParagraphGraphicFactory(LineNumberFactory.get(codeArea));
-
+    
         Font menloFont = Font.loadFont(Objects.requireNonNull(TextEditor.class.getResourceAsStream("Menlo-Regular.woff")), 12);
         codeArea.setStyle("-fx-font-family: 'Menlo'; -fx-font-size: 10pt");
-
+    
         codeArea.textProperty().addListener((observable, oldValue, newValue) -> {
             Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
             TabData tabData = (TabData) currentTab.getUserData();
@@ -72,17 +73,46 @@ public class TextEditor extends Application {
                 }
             }
         });
-
+    
         codeArea.richChanges()
             .filter(ch -> !ch.getInserted().equals(ch.getRemoved()))
             .subscribe(change -> {
                 codeArea.setStyleSpans(0, computeHighlighting(codeArea.getText()));
             });
 
+        return getTab(codeArea);
+    }
+
+    private static Tab getTab(CodeArea codeArea) {
         VirtualizedScrollPane<CodeArea> virtualizedScrollPane = new VirtualizedScrollPane<>(codeArea);
         Tab tab = new Tab("Untitled", virtualizedScrollPane);
         TabData tabData = new TabData(codeArea);
         tab.setUserData(tabData);
+
+        tab.setOnCloseRequest(event -> {
+            if (tabData.isChanged) {
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                alert.setTitle("Unsaved Changes");
+                alert.setHeaderText("You have unsaved changes.");
+                alert.setContentText("Do you want to save before closing?");
+
+                ButtonType btnSave = new ButtonType("Save");
+                ButtonType btnDontSave = new ButtonType("Don't Save");
+                ButtonType btnCancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+                alert.getButtonTypes().setAll(btnSave, btnDontSave, btnCancel);
+
+                Optional<ButtonType> result = alert.showAndWait();
+                if (result.isPresent()) {
+                    if (result.get() == btnSave) {
+                        saveFile();
+                    }
+                    else if (result.get() == btnCancel) {
+                        event.consume();
+                    }
+                }
+            }
+        });
         return tab;
     }
 

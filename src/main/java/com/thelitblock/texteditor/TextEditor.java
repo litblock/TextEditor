@@ -12,7 +12,6 @@ import javafx.stage.Stage;
 import org.fxmisc.flowless.VirtualizedScrollPane;
 import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
-import javafx.scene.text.Font;
 
 import java.io.*;
 import java.util.Objects;
@@ -20,68 +19,69 @@ import java.util.Objects;
 import static com.thelitblock.texteditor.SyntaxHighlighting.computeHighlighting;
 
 public class TextEditor extends Application {
+    private final TabPane tabPane = new TabPane();
     public static CodeArea codeArea;
     static Stage primaryStage;
     static File currentFile = null;
     static boolean isChanged = false;
     static Scene scene;
+    static HBox searchBar = new HBox();
+    private TextField searchText;
+    static MenuBar menuBar;
 
     @Override
     public void start(Stage primaryStage) {
         TextEditor.primaryStage = primaryStage;
-        codeArea = new CodeArea();
+        setupEditor();
+        setupMenuBar();
+        setupSearchBar();
+        setupScene();
+        primaryStage.show();
+    }
 
+    private void setupEditor() {
+        Tab defaultTab = createNewTab("Untitled");
+        tabPane.getTabs().add(defaultTab);
+    }
+
+    private Tab createNewTab(String title) {
+        CodeArea codeArea = new CodeArea();
         codeArea.setId("codeArea");
+        codeArea.setParagraphGraphicFactory(LineNumberFactory.get(codeArea));
+        codeArea.richChanges().subscribe(change -> codeArea.setStyleSpans(0, computeHighlighting(codeArea.getText())));
+        codeArea.setStyle("-fx-font-family: 'Menlo'; -fx-font-size: 10pt");
 
         VirtualizedScrollPane<CodeArea> virtualizedScrollPane = new VirtualizedScrollPane<>(codeArea);
+        Tab tab = new Tab(title, virtualizedScrollPane);
+        tab.setUserData(codeArea);
+        return tab;
+    }
 
-        primaryStage.setTitle("Text Editor");
-        Font menloFont = Font.loadFont(Objects.requireNonNull(getClass().getResourceAsStream("Menlo-Regular.woff")), 12);
-        codeArea.setStyle("-fx-font-family: 'Menlo'; -fx-font-size: 10pt");
-        //codeArea.setPadding(new Insets(0, 20, 0, 0));
-
-        VBox vBox = new VBox();
+    private void setupMenuBar() {
         MenuBar menuBar = new MenuBar();
-
         Menu fileMenu = new Menu("File");
         fileMenu.getItems().addAll(new MenuItem("New"), new MenuItem("Open"), new MenuItem("Save"), new MenuItem("Save As"), new MenuItem("Exit"));
         Menu editMenu = new Menu("Edit");
         editMenu.getItems().addAll(new MenuItem("Cut"), new MenuItem("Copy"), new MenuItem("Paste"), new MenuItem("Select All"));
         Menu themeMenu = new Menu("Theme");
         themeMenu.getItems().addAll(new MenuItem("Dark Theme"), new MenuItem("Light Theme"));
+        menuBar.getMenus().addAll(fileMenu, editMenu, themeMenu);
+    }
 
-        fileMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
-        editMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
-        themeMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
-
-        codeArea.setParagraphGraphicFactory(LineNumberFactory.get(codeArea));
-        codeArea.textProperty().addListener((observable, oldValue, newValue) -> isChanged = true);
-        codeArea.richChanges()
-            .filter(ch -> !ch.getInserted().equals(ch.getRemoved()))
-            .subscribe(change -> {
-               codeArea.setStyleSpans(0, computeHighlighting(codeArea.getText()));
-        });
-        codeArea.getStyleClass().add("codeArea");
-
-        HBox searchBar = new HBox(5);
-        TextField searchText = new TextField();
+    private void setupSearchBar() {
+        searchText = new TextField();
         Button findNext = new Button("Next");
         Button findPrevious = new Button("Previous");
         searchBar.getChildren().addAll(new Label("Find:"), searchText, findNext, findPrevious);
         searchBar.setAlignment(Pos.CENTER_LEFT);
         searchBar.setVisible(false);
+    }
 
-        menuBar.getMenus().addAll(fileMenu, editMenu, themeMenu);
-        vBox.getChildren().addAll(menuBar, searchBar, virtualizedScrollPane);
-        VBox.setVgrow(virtualizedScrollPane, javafx.scene.layout.Priority.ALWAYS);
-
-        scene = new Scene(vBox, 800, 600);
-
-        scene.getStylesheets().add(Objects.requireNonNull(TextEditor.class.getResource("DarkTheme.css")).toExternalForm());
-
+    private void setupScene() {
+        VBox vBox = new VBox();
+        Scene scene = new Scene(vBox, 800, 600);
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            final KeyCombination keyComb = new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN);
-            if (keyComb.match(event)) {
+            if (new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN).match(event)) {
                 searchBar.setVisible(!searchBar.isVisible());
                 if (searchBar.isVisible()) {
                     searchText.requestFocus();
@@ -89,9 +89,11 @@ public class TextEditor extends Application {
                 event.consume();
             }
         });
-
+        vBox.getChildren().addAll(new MenuBar(), tabPane);
+        VBox.setVgrow(tabPane, javafx.scene.layout.Priority.ALWAYS);
+        TextEditor.scene = scene;
+        scene.getStylesheets().add(Objects.requireNonNull(TextEditor.class.getResource("DarkTheme.css")).toExternalForm());
         primaryStage.setScene(scene);
-        primaryStage.show();
     }
 
     public static void displayFile() {

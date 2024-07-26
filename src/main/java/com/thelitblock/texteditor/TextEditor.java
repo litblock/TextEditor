@@ -28,7 +28,7 @@ public class TextEditor extends Application {
     static File currentFile = null;
 
     private static final Set<Integer> untitledNumbers = new HashSet<>();
-    private static int untitledCounter = 1;
+    private static int untitledCounter = 0;
 
 
     @Override
@@ -42,10 +42,9 @@ public class TextEditor extends Application {
     }
 
     private void setupEditor() {
-        Tab defaultTab;
-        defaultTab = createNewTab("Untitled");
+        Tab defaultTab = createNewTab(getNextUntitledName());
         tabPane.getTabs().add(defaultTab);
-        untitledNumbers.add(untitledCounter++);
+
         Tab plusTab = new Tab("+");
         plusTab.setClosable(false);
         tabPane.getTabs().add(plusTab);
@@ -121,6 +120,9 @@ public class TextEditor extends Application {
                 int number = Integer.parseInt(title.substring(9));
                 untitledNumbers.add(number);
             }
+            else if (title.equals("Untitled")) {
+                untitledNumbers.add(0);
+            }
         });
 
         return tab;
@@ -130,9 +132,16 @@ public class TextEditor extends Application {
         if (!untitledNumbers.isEmpty()) {
             int nextNumber = Collections.min(untitledNumbers);
             untitledNumbers.remove(nextNumber);
+            if (nextNumber == 0) {
+                return "Untitled";
+            }
             return "Untitled " + nextNumber;
         }
         else {
+            if (untitledCounter == 0) {
+                untitledCounter++;
+                return "Untitled";
+            }
             return "Untitled " + (untitledCounter++);
         }
     }

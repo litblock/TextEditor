@@ -13,10 +13,8 @@ import javafx.stage.Stage;
 import org.fxmisc.flowless.VirtualizedScrollPane;
 import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
-
 import java.io.*;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 import static com.thelitblock.texteditor.SyntaxHighlighting.computeHighlighting;
 
@@ -29,6 +27,10 @@ public class TextEditor extends Application {
     static MenuBar menuBar;
     static File currentFile = null;
 
+    private static final Set<Integer> untitledNumbers = new HashSet<>();
+    private static int untitledCounter = 1;
+
+
     @Override
     public void start(Stage primaryStage) {
         TextEditor.primaryStage = primaryStage;
@@ -40,16 +42,18 @@ public class TextEditor extends Application {
     }
 
     private void setupEditor() {
-        Tab defaultTab = createNewTab("Untitled");
+        Tab defaultTab;
+        defaultTab = createNewTab("Untitled");
         tabPane.getTabs().add(defaultTab);
-
+        untitledNumbers.add(untitledCounter++);
         Tab plusTab = new Tab("+");
         plusTab.setClosable(false);
         tabPane.getTabs().add(plusTab);
 
         tabPane.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
             if (newTab == plusTab) {
-                Tab newTabToAdd = createNewTab("Untitled");
+                String title = getNextUntitledName();
+                Tab newTabToAdd = createNewTab(title);
                 tabPane.getTabs().add(tabPane.getTabs().size() - 1, newTabToAdd);
                 tabPane.getSelectionModel().select(newTabToAdd);
             }
@@ -113,8 +117,24 @@ public class TextEditor extends Application {
                     }
                 }
             }
+            if (title.startsWith("Untitled ")) {
+                int number = Integer.parseInt(title.substring(9));
+                untitledNumbers.add(number);
+            }
         });
+
         return tab;
+    }
+
+    private static String getNextUntitledName() {
+        if (!untitledNumbers.isEmpty()) {
+            int nextNumber = Collections.min(untitledNumbers);
+            untitledNumbers.remove(nextNumber);
+            return "Untitled " + nextNumber;
+        }
+        else {
+            return "Untitled " + (untitledCounter++);
+        }
     }
 
     private void setupMenuBar() {

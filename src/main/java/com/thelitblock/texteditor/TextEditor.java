@@ -6,6 +6,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.stage.FileChooser;
@@ -15,7 +16,7 @@ import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
 import java.io.*;
 import java.util.*;
-
+import javafx.geometry.Orientation;
 import static com.thelitblock.texteditor.SyntaxHighlighting.computeHighlighting;
 
 public class TextEditor extends Application {
@@ -28,21 +29,31 @@ public class TextEditor extends Application {
     static File currentFile = null;
 
     private static final Set<Integer> untitledNumbers = new HashSet<>();
-    private static int untitledCounter = 0;
+    private static int untitledCounter = 1;
 
-    //terminal items
+    // Terminal items
     private TextArea terminalOutput;
     private TextField commandInput;
-    private Tab terminalTab;
 
     @Override
     public void start(Stage primaryStage) {
-        TextEditor.primaryStage = primaryStage;
-        setupEditor();
-        setupMenuBar();
-        setupScene();
-        primaryStage.setTitle("TextEditor");
-        primaryStage.show();
+        try {
+            TextEditor.primaryStage = primaryStage;
+            setupMenuBar();
+
+            VBox vBox = new VBox();
+            scene = new Scene(vBox, 800, 600);
+            vBox.getChildren().addAll(menuBar);
+            primaryStage.setScene(scene);
+
+            setupEditor();
+            setupScene();
+            primaryStage.setTitle("TextEditor");
+            primaryStage.show();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void setupEditor() {
@@ -55,6 +66,15 @@ public class TextEditor extends Application {
         tabPane.getTabs().add(plusTab);
 
         setupTerminal();
+
+        SplitPane splitPane = new SplitPane();
+        splitPane.setOrientation(Orientation.VERTICAL);
+        splitPane.getItems().addAll(tabPane, createTerminalPane());
+
+        VBox vBox = new VBox(menuBar, splitPane);
+        VBox.setVgrow(splitPane, Priority.ALWAYS);
+
+        scene.setRoot(vBox);
 
         tabPane.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
             if (newTab == plusTab) {
@@ -75,14 +95,15 @@ public class TextEditor extends Application {
         commandInput.setPromptText("Enter command and press Enter");
 
         commandInput.setOnAction(event -> executeCommand(commandInput.getText()));
+    }
 
+    private VBox createTerminalPane() {
         VBox terminalBox = new VBox(10);
         terminalBox.getChildren().addAll(terminalOutput, commandInput);
-
-        terminalTab = new Tab("Terminal", terminalBox);
-        tabPane.getTabs().add(terminalTab);
+        VBox.setVgrow(terminalOutput, Priority.ALWAYS);
+        return terminalBox;
     }
-    
+
     static Tab createNewTab(String title) {
         CodeArea codeArea = new CodeArea();
         codeArea.setId("codeArea");
@@ -137,14 +158,16 @@ public class TextEditor extends Application {
                     }
                     else if (result.get() == btnCancel) {
                         event.consume();
+                        return;
                     }
                 }
             }
-            if (title.startsWith("Untitled ")) {
-                int number = Integer.parseInt(title.substring(9));
+            String tabText = tab.getText().replace("*", "");
+            if (tabText.startsWith("Untitled ")) {
+                int number = Integer.parseInt(tabText.substring(9));
                 untitledNumbers.add(number);
             }
-            else if (title.equals("Untitled")) {
+            else if (tabText.equals("Untitled")) {
                 untitledNumbers.add(0);
             }
         });
@@ -162,11 +185,7 @@ public class TextEditor extends Application {
             return "Untitled " + nextNumber;
         }
         else {
-            if (untitledCounter == 0) {
-                untitledCounter++;
-                return "Untitled";
-            }
-            return "Untitled " + (untitledCounter++);
+            return "Untitled " + untitledCounter++;
         }
     }
 
@@ -194,11 +213,6 @@ public class TextEditor extends Application {
     }
 
     private void setupScene() {
-        VBox vBox = new VBox();
-        Scene scene = new Scene(vBox, 800, 600);
-        vBox.getChildren().addAll(menuBar, tabPane);
-        VBox.setVgrow(tabPane, javafx.scene.layout.Priority.ALWAYS);
-        TextEditor.scene = scene;
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             final KeyCombination keyComb = new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN);
             if (keyComb.match(event)) {
@@ -209,8 +223,14 @@ public class TextEditor extends Application {
                 event.consume();
             }
         });
-        scene.getStylesheets().add(Objects.requireNonNull(TextEditor.class.getResource("DarkTheme.css")).toExternalForm());
-        primaryStage.setScene(scene);
+
+        String css = TextEditor.class.getResource("DarkTheme.css").toExternalForm();
+        if (css != null) {
+            scene.getStylesheets().add(css);
+        }
+        else {
+            System.err.println("DarkTheme.css not found");
+        }
     }
 
     private void executeCommand(String command) {
@@ -229,12 +249,9 @@ public class TextEditor extends Application {
             while ((s = stdError.readLine()) != null) {
                 terminalOutput.appendText("ERROR: " + s + "\n");
             }
-
-            int exitCode = process.waitFor();
-            terminalOutput.appendText("Exit code: " + exitCode + "\n");
         }
-        catch (IOException | InterruptedException e) {
-            terminalOutput.appendText("Exception: " + e.getMessage() + "\n");
+        catch (IOException e) {
+            terminalOutput.appendText("ERROR: " + e.getMessage() + "\n");
         }
         commandInput.clear();
     }

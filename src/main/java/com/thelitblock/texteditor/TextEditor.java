@@ -30,6 +30,10 @@ public class TextEditor extends Application {
     private static final Set<Integer> untitledNumbers = new HashSet<>();
     private static int untitledCounter = 0;
 
+    //terminal items
+    private TextArea terminalOutput;
+    private TextField commandInput;
+    private Tab terminalTab;
 
     @Override
     public void start(Stage primaryStage) {
@@ -42,12 +46,15 @@ public class TextEditor extends Application {
     }
 
     private void setupEditor() {
-        Tab defaultTab = createNewTab(getNextUntitledName());
+        Tab defaultTab = createNewTab("Untitled");
         tabPane.getTabs().add(defaultTab);
+        untitledNumbers.add(untitledCounter++);
 
         Tab plusTab = new Tab("+");
         plusTab.setClosable(false);
         tabPane.getTabs().add(plusTab);
+
+        setupTerminal();
 
         tabPane.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
             if (newTab == plusTab) {
@@ -57,6 +64,23 @@ public class TextEditor extends Application {
                 tabPane.getSelectionModel().select(newTabToAdd);
             }
         });
+    }
+
+    private void setupTerminal() {
+        terminalOutput = new TextArea();
+        terminalOutput.setEditable(false);
+        terminalOutput.setWrapText(true);
+
+        commandInput = new TextField();
+        commandInput.setPromptText("Enter command and press Enter");
+
+        commandInput.setOnAction(event -> executeCommand(commandInput.getText()));
+
+        VBox terminalBox = new VBox(10);
+        terminalBox.getChildren().addAll(terminalOutput, commandInput);
+
+        terminalTab = new Tab("Terminal", terminalBox);
+        tabPane.getTabs().add(terminalTab);
     }
     
     static Tab createNewTab(String title) {
@@ -188,6 +212,34 @@ public class TextEditor extends Application {
         scene.getStylesheets().add(Objects.requireNonNull(TextEditor.class.getResource("DarkTheme.css")).toExternalForm());
         primaryStage.setScene(scene);
     }
+
+    private void executeCommand(String command) {
+        terminalOutput.appendText("> " + command + "\n");
+        try {
+            ProcessBuilder builder = new ProcessBuilder("bash", "-c", command);
+            Process process = builder.start();
+
+            BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+
+            String s;
+            while ((s = stdInput.readLine()) != null) {
+                terminalOutput.appendText(s + "\n");
+            }
+            while ((s = stdError.readLine()) != null) {
+                terminalOutput.appendText("ERROR: " + s + "\n");
+            }
+
+            int exitCode = process.waitFor();
+            terminalOutput.appendText("Exit code: " + exitCode + "\n");
+        }
+        catch (IOException | InterruptedException e) {
+            terminalOutput.appendText("Exception: " + e.getMessage() + "\n");
+        }
+        commandInput.clear();
+    }
+
+    //menu functions
 
     private static CodeArea getCurrentCodeArea() {
         Tab currentTab = tabPane.getSelectionModel().getSelectedItem();

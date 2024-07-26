@@ -31,9 +31,12 @@ public class TextEditor extends Application {
     private static final Set<Integer> untitledNumbers = new HashSet<>();
     private static int untitledCounter = 1;
 
-    // Terminal items
+    // Terminal stuff
     private TextArea terminalOutput;
     private TextField commandInput;
+    private List<String> commandHistory = new ArrayList<>();
+    private int historyIndex = -1;
+
 
     @Override
     public void start(Stage primaryStage) {
@@ -94,7 +97,33 @@ public class TextEditor extends Application {
         commandInput = new TextField();
         commandInput.setPromptText("Enter command and press Enter");
 
-        commandInput.setOnAction(event -> executeCommand(commandInput.getText()));
+        commandInput.setOnAction(event -> {
+            String command = commandInput.getText();
+            executeCommand(command);
+            commandHistory.add(command);
+            historyIndex = commandHistory.size();
+        });
+
+        commandInput.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.UP) {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    commandInput.setText(commandHistory.get(historyIndex));
+                    commandInput.positionCaret(commandInput.getText().length());
+                }
+            }
+            else if (event.getCode() == KeyCode.DOWN) {
+                if (historyIndex < commandHistory.size() - 1) {
+                    historyIndex++;
+                    commandInput.setText(commandHistory.get(historyIndex));
+                    commandInput.positionCaret(commandInput.getText().length());
+                }
+                else {
+                    historyIndex = commandHistory.size();
+                    commandInput.clear();
+                }
+            }
+        });
     }
 
     private VBox createTerminalPane() {
@@ -202,14 +231,20 @@ public class TextEditor extends Application {
         fileMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
         editMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
         themeMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
+    }
 
+    private void setupSearchBar() {
         searchText = new TextField();
         Button findNext = new Button("Next");
         Button findPrevious = new Button("Previous");
+
+        //implement search functionality
+        //findNext.setOnAction(event -> searchText("next"));
+        //findPrevious.setOnAction(event -> searchText("previous"));
+
         searchBar.getChildren().addAll(new Label("Find:"), searchText, findNext, findPrevious);
         searchBar.setAlignment(Pos.CENTER_LEFT);
         searchBar.setVisible(false);
-        menuBar.getMenus().add(new Menu("", searchBar));
     }
 
     private void setupScene() {
@@ -236,7 +271,13 @@ public class TextEditor extends Application {
     private void executeCommand(String command) {
         terminalOutput.appendText("> " + command + "\n");
         try {
-            ProcessBuilder builder = new ProcessBuilder("bash", "-c", command);
+            ProcessBuilder builder;
+            if (System.getProperty("os.name").toLowerCase().contains("win")) {
+                builder = new ProcessBuilder("cmd.exe", "/c", command);
+            } else {
+                builder = new ProcessBuilder("bash", "-c", command);
+            }
+
             Process process = builder.start();
 
             BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));

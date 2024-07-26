@@ -1,6 +1,7 @@
 package com.thelitblock.texteditor;
 
 import javafx.application.Application;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -37,12 +38,12 @@ public class TextEditor extends Application {
     private List<String> commandHistory = new ArrayList<>();
     private int historyIndex = -1;
 
-
     @Override
     public void start(Stage primaryStage) {
         try {
             TextEditor.primaryStage = primaryStage;
             setupMenuBar();
+            setupSearchBar();
 
             VBox vBox = new VBox();
             scene = new Scene(vBox, 800, 600);
@@ -53,8 +54,7 @@ public class TextEditor extends Application {
             setupScene();
             primaryStage.setTitle("TextEditor");
             primaryStage.show();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -74,10 +74,10 @@ public class TextEditor extends Application {
         splitPane.setOrientation(Orientation.VERTICAL);
         splitPane.getItems().addAll(tabPane, createTerminalPane());
 
-        VBox vBox = new VBox(menuBar, splitPane);
+        VBox editorBox = new VBox(menuBar, searchBar, splitPane);
         VBox.setVgrow(splitPane, Priority.ALWAYS);
 
-        scene.setRoot(vBox);
+        scene.setRoot(editorBox);
 
         tabPane.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
             if (newTab == plusTab) {
@@ -226,32 +226,40 @@ public class TextEditor extends Application {
         editMenu.getItems().addAll(new MenuItem("Cut"), new MenuItem("Copy"), new MenuItem("Paste"), new MenuItem("Select All"));
         Menu themeMenu = new Menu("Theme");
         themeMenu.getItems().addAll(new MenuItem("Dark Theme"), new MenuItem("Light Theme"));
+
         menuBar.getMenus().addAll(fileMenu, editMenu, themeMenu);
 
         fileMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
         editMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
         themeMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
+
+        setupSearchBar();
     }
 
     private void setupSearchBar() {
         searchText = new TextField();
+        searchText.setPromptText("Find...");
+
         Button findNext = new Button("Next");
         Button findPrevious = new Button("Previous");
 
-        //implement search functionality
-        //findNext.setOnAction(event -> searchText("next"));
-        //findPrevious.setOnAction(event -> searchText("previous"));
+        findNext.setOnAction(event -> searchText("next"));
+        findPrevious.setOnAction(event -> searchText("previous"));
 
-        searchBar.getChildren().addAll(new Label("Find:"), searchText, findNext, findPrevious);
+        searchBar = new HBox(10, new Label("Find:"), searchText, findPrevious, findNext);
         searchBar.setAlignment(Pos.CENTER_LEFT);
+        searchBar.setPadding(new Insets(5));
         searchBar.setVisible(false);
     }
+
 
     private void setupScene() {
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             final KeyCombination keyComb = new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN);
             if (keyComb.match(event)) {
-                searchBar.setVisible(!searchBar.isVisible());
+                boolean isVisible = searchBar.isVisible();
+                searchBar.setVisible(!isVisible);
+
                 if (searchBar.isVisible()) {
                     searchText.requestFocus();
                 }
@@ -444,6 +452,30 @@ public class TextEditor extends Application {
     public static void changeDarkTheme() {
         scene.getStylesheets().clear();
         scene.getStylesheets().add(Objects.requireNonNull(TextEditor.class.getResource("DarkTheme.css")).toExternalForm());
+    }
+
+    private void searchText(String direction) {
+        CodeArea codeArea = getCurrentCodeArea();
+        if (codeArea != null) {
+            String query = searchText.getText();
+            if (query == null || query.isEmpty()) return;
+
+            String text = codeArea.getText();
+            int startIndex = (direction.equals("next")) ? codeArea.getCaretPosition() : 0;
+            int index = direction.equals("next") ? text.indexOf(query, startIndex) : text.lastIndexOf(query, startIndex);
+
+            if (index != -1) {
+                codeArea.selectRange(index, index + query.length());
+                codeArea.requestFollowCaret();
+            }
+            else {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Search Result");
+                alert.setHeaderText(null);
+                alert.setContentText("No matches found.");
+                alert.showAndWait();
+            }
+        }
     }
 
     public static void main(String[] args) {

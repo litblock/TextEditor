@@ -249,19 +249,40 @@ public class TextEditor extends Application {
         searchBar = new HBox(10, new Label("Find:"), searchText, findPrevious, findNext);
         searchBar.setAlignment(Pos.CENTER_LEFT);
         searchBar.setPadding(new Insets(5));
+        searchBar.setManaged(false);
         searchBar.setVisible(false);
     }
 
+    private void showSearchBar() {
+        if (!searchBar.isVisible()) {
+            searchBar.setManaged(true);
+            searchBar.setVisible(true);
+            VBox root = (VBox) scene.getRoot();
+            if (!root.getChildren().contains(searchBar)) {
+                root.getChildren().add(1, searchBar);
+            }
+            searchText.requestFocus();
+        }
+    }
+
+    private void hideSearchBar() {
+        if (searchBar.isVisible()) {
+            searchBar.setManaged(false);
+            searchBar.setVisible(false);
+            VBox root = (VBox) scene.getRoot();
+            root.getChildren().remove(searchBar);
+        }
+    }
 
     private void setupScene() {
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             final KeyCombination keyComb = new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN);
             if (keyComb.match(event)) {
-                boolean isVisible = searchBar.isVisible();
-                searchBar.setVisible(!isVisible);
-
                 if (searchBar.isVisible()) {
-                    searchText.requestFocus();
+                    hideSearchBar();
+                }
+                else {
+                    showSearchBar();
                 }
                 event.consume();
             }
@@ -282,7 +303,8 @@ public class TextEditor extends Application {
             ProcessBuilder builder;
             if (System.getProperty("os.name").toLowerCase().contains("win")) {
                 builder = new ProcessBuilder("cmd.exe", "/c", command);
-            } else {
+            }
+            else {
                 builder = new ProcessBuilder("bash", "-c", command);
             }
 

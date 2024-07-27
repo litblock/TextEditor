@@ -33,10 +33,8 @@ public class TextEditor extends Application {
     private static int untitledCounter = 1;
 
     // Terminal stuff
-    private TextArea terminalOutput;
-    private TextField commandInput;
-    private List<String> commandHistory = new ArrayList<>();
-    private int historyIndex = -1;
+    protected static TextArea terminalOutput;
+    protected static TextField commandInput;
 
     //find and replace
     private Label searchResultCount;
@@ -74,11 +72,11 @@ public class TextEditor extends Application {
         plusTab.setClosable(false);
         tabPane.getTabs().add(plusTab);
 
-        setupTerminal();
+        TerminalSetup.setupTerminal();
 
         SplitPane splitPane = new SplitPane();
         splitPane.setOrientation(Orientation.VERTICAL);
-        splitPane.getItems().addAll(tabPane, createTerminalPane());
+        splitPane.getItems().addAll(tabPane, TerminalSetup.createTerminalPane());
 
         VBox editorBox = new VBox(menuBar, searchBar, splitPane);
         VBox.setVgrow(splitPane, Priority.ALWAYS);
@@ -93,50 +91,6 @@ public class TextEditor extends Application {
                 tabPane.getSelectionModel().select(newTabToAdd);
             }
         });
-    }
-
-    private void setupTerminal() {
-        terminalOutput = new TextArea();
-        terminalOutput.setEditable(false);
-        terminalOutput.setWrapText(true);
-
-        commandInput = new TextField();
-        commandInput.setPromptText("Enter command and press Enter");
-
-        commandInput.setOnAction(event -> {
-            String command = commandInput.getText();
-            executeCommand(command);
-            commandHistory.add(command);
-            historyIndex = commandHistory.size();
-        });
-
-        commandInput.setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.UP) {
-                if (historyIndex > 0) {
-                    historyIndex--;
-                    commandInput.setText(commandHistory.get(historyIndex));
-                    commandInput.positionCaret(commandInput.getText().length());
-                }
-            }
-            else if (event.getCode() == KeyCode.DOWN) {
-                if (historyIndex < commandHistory.size() - 1) {
-                    historyIndex++;
-                    commandInput.setText(commandHistory.get(historyIndex));
-                    commandInput.positionCaret(commandInput.getText().length());
-                }
-                else {
-                    historyIndex = commandHistory.size();
-                    commandInput.clear();
-                }
-            }
-        });
-    }
-
-    private VBox createTerminalPane() {
-        VBox terminalBox = new VBox(10);
-        terminalBox.getChildren().addAll(terminalOutput, commandInput);
-        VBox.setVgrow(terminalOutput, Priority.ALWAYS);
-        return terminalBox;
     }
 
     static Tab createNewTab(String title) {
@@ -440,36 +394,6 @@ public class TextEditor extends Application {
         else {
             System.err.println("DarkTheme.css not found");
         }
-    }
-
-    private void executeCommand(String command) {
-        terminalOutput.appendText("> " + command + "\n");
-        try {
-            ProcessBuilder builder;
-            if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                builder = new ProcessBuilder("cmd.exe", "/c", command);
-            }
-            else {
-                builder = new ProcessBuilder("bash", "-c", command);
-            }
-
-            Process process = builder.start();
-
-            BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-
-            String s;
-            while ((s = stdInput.readLine()) != null) {
-                terminalOutput.appendText(s + "\n");
-            }
-            while ((s = stdError.readLine()) != null) {
-                terminalOutput.appendText("ERROR: " + s + "\n");
-            }
-        }
-        catch (IOException e) {
-            terminalOutput.appendText("ERROR: " + e.getMessage() + "\n");
-        }
-        commandInput.clear();
     }
 
     //menu functions

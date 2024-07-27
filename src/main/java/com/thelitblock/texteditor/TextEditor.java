@@ -244,8 +244,13 @@ public class TextEditor extends Application {
         searchText = new TextField();
         searchText.setPromptText("Search");
 
+        TextField replaceText = new TextField();
+        replaceText.setPromptText("Replace");
+
         Button prevButton = new Button("Prev");
         Button nextButton = new Button("Next");
+        Button replaceButton = new Button("Replace");
+        Button replaceAllButton = new Button("Replace All");
 
         searchResultCount = new Label("0/0");
 
@@ -255,8 +260,10 @@ public class TextEditor extends Application {
 
         prevButton.setOnAction(event -> navigateSearchResults(-1));
         nextButton.setOnAction(event -> navigateSearchResults(1));
+        replaceButton.setOnAction(event -> replaceCurrentOccurrence(replaceText.getText()));
+        replaceAllButton.setOnAction(event -> replaceAllOccurrences(replaceText.getText()));
 
-        searchBar.getChildren().addAll(searchText, prevButton, nextButton, searchResultCount);
+        searchBar.getChildren().addAll(searchText, replaceText, replaceButton, replaceAllButton, prevButton, nextButton, searchResultCount);
         searchBar.setSpacing(5);
         searchBar.setAlignment(Pos.CENTER_LEFT);
         searchBar.setPadding(new Insets(5));
@@ -265,7 +272,41 @@ public class TextEditor extends Application {
 
         searchBar.setId("searchBar");
         searchResultCount.setId("searchResultCount");
+    }
 
+    private void replaceCurrentOccurrence(String replacement) {
+        if (searchIndices.isEmpty() || currentSearchIndex == -1) {
+            return;
+        }
+
+        Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+        if (currentTab != null) {
+            CodeArea codeArea = ((TabData) currentTab.getUserData()).codeArea;
+            int startPos = searchIndices.get(currentSearchIndex);
+            int endPos = startPos + searchText.getText().length();
+            codeArea.replaceText(startPos, endPos, replacement);
+
+            updateSearchResults(searchText.getText());
+            navigateSearchResults(1);
+        }
+    }
+
+    private void replaceAllOccurrences(String replacement) {
+        if (searchIndices.isEmpty()) {
+            return;
+        }
+
+        Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+        if (currentTab != null) {
+            CodeArea codeArea = ((TabData) currentTab.getUserData()).codeArea;
+            String searchTextStr = searchText.getText();
+            String text = codeArea.getText();
+            text = text.replaceAll(java.util.regex.Pattern.quote(searchTextStr), replacement);
+            codeArea.replaceText(0, codeArea.getLength(), text);
+
+            updateSearchResults(searchTextStr);
+            navigateSearchResults(1);
+        }
     }
 
     private void updateSearchResults(String query) {
@@ -375,14 +416,17 @@ public class TextEditor extends Application {
 
     private void setupScene() {
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            final KeyCombination keyComb = new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN);
-            if (keyComb.match(event)) {
+            if (event.getCode() == KeyCode.F && event.isControlDown()) {
                 if (searchBar.isVisible()) {
                     hideSearchBar();
                 }
                 else {
                     showSearchBar();
                 }
+                event.consume();
+            }
+            if (event.getCode() == KeyCode.ENTER) {
+                navigateSearchResults(1);
                 event.consume();
             }
         });

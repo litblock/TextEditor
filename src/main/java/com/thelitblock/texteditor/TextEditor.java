@@ -38,6 +38,11 @@ public class TextEditor extends Application {
     private List<String> commandHistory = new ArrayList<>();
     private int historyIndex = -1;
 
+    //find and replace
+    private Label searchResultCount;
+    private int currentSearchIndex = -1;
+    private List<Integer> searchIndices = new ArrayList<>();
+
     @Override
     public void start(Stage primaryStage) {
         try {
@@ -54,7 +59,8 @@ public class TextEditor extends Application {
             setupScene();
             primaryStage.setTitle("TextEditor");
             primaryStage.show();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -232,27 +238,60 @@ public class TextEditor extends Application {
         fileMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
         editMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
         themeMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
-
-        setupSearchBar();
     }
 
     private void setupSearchBar() {
         searchText = new TextField();
-        searchText.setPromptText("Find...");
+        searchText.setPromptText("Search");
 
-        Button findNext = new Button("Next");
-        Button findPrevious = new Button("Previous");
+        Button prevButton = new Button("Prev");
+        Button nextButton = new Button("Next");
 
-        findNext.setOnAction(event -> navigateSearchResult(true));
-        findPrevious.setOnAction(event -> navigateSearchResult(false));
+        searchResultCount = new Label("0/0");
 
-        searchBar = new HBox(10, new Label("Find:"), searchText, findPrevious, findNext);
+        searchText.textProperty().addListener((obs, oldText, newText) -> {
+            updateSearchResults(newText);
+        });
+
+        prevButton.setOnAction(event -> navigateSearchResults(-1));
+        nextButton.setOnAction(event -> navigateSearchResults(1));
+
+        searchBar.getChildren().addAll(searchText, prevButton, nextButton, searchResultCount);
+        searchBar.setSpacing(5);
         searchBar.setAlignment(Pos.CENTER_LEFT);
         searchBar.setPadding(new Insets(5));
         searchBar.setManaged(false);
         searchBar.setVisible(false);
 
-        searchText.textProperty().addListener((obs, oldText, newText) -> highlightSearchResults(newText));
+        searchBar.setId("searchBar");
+        searchResultCount.setId("searchResultCount");
+
+    }
+
+    private void updateSearchResults(String query) {
+        searchIndices.clear();
+        currentSearchIndex = -1;
+
+        if (query.isEmpty()) {
+            updateSearchResultCount();
+            clearHighlights();
+            return;
+        }
+
+        Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+        if (currentTab != null) {
+            CodeArea codeArea = ((TabData) currentTab.getUserData()).codeArea;
+            String text = codeArea.getText();
+            int index = text.indexOf(query, 0);
+            while (index != -1) {
+                searchIndices.add(index);
+                index = text.indexOf(query, index + query.length());
+            }
+
+            highlightSearchResults(query);
+        }
+
+        navigateSearchResults(1);
     }
 
     private void showSearchBar() {
@@ -301,36 +340,36 @@ public class TextEditor extends Application {
         }
     }
 
-    private void navigateSearchResult(boolean forward) {
-        CodeArea codeArea = getCurrentCodeArea();
-        if (codeArea == null) return;
+    private void navigateSearchResults(int direction) {
+        if (searchIndices.isEmpty()) {
+            return;
+        }
 
-        String query = searchText.getText();
-        if (query == null || query.isEmpty()) return;
+        currentSearchIndex += direction;
 
-        String text = codeArea.getText();
-        int currentPos = codeArea.getCaretPosition();
-        int index;
+        if (currentSearchIndex < 0) {
+            currentSearchIndex = searchIndices.size() - 1;
+        }
+        else if (currentSearchIndex >= searchIndices.size()) {
+            currentSearchIndex = 0;
+        }
 
-        if (forward) {
-            index = text.indexOf(query, currentPos);
-            if (index == -1) index = text.indexOf(query);
+        Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+        if (currentTab != null) {
+            CodeArea codeArea = ((TabData) currentTab.getUserData()).codeArea;
+            int pos = searchIndices.get(currentSearchIndex);
+            codeArea.selectRange(pos, pos + searchText.getText().length());
+        }
+
+        updateSearchResultCount();
+    }
+
+    private void updateSearchResultCount() {
+        if (searchIndices.isEmpty()) {
+            searchResultCount.setText("0/0");
         }
         else {
-            index = text.lastIndexOf(query, currentPos - query.length() - 1);
-            if (index == -1) index = text.lastIndexOf(query);
-        }
-
-        if (index != -1) {
-            codeArea.selectRange(index, index + query.length());
-            codeArea.requestFollowCaret();
-        }
-        else {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Search Result");
-            alert.setHeaderText(null);
-            alert.setContentText("No more matches found.");
-            alert.showAndWait();
+            searchResultCount.setText((currentSearchIndex + 1) + "/" + searchIndices.size());
         }
     }
 

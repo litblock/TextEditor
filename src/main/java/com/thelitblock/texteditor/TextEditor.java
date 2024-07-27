@@ -425,9 +425,11 @@ public class TextEditor extends Application {
                 }
                 event.consume();
             }
-            if (event.getCode() == KeyCode.ENTER) {
-                navigateSearchResults(1);
-                event.consume();
+            else if (event.getCode() == KeyCode.ENTER) {
+                if (searchBar.isVisible()) {
+                    navigateSearchResults(1);
+                    event.consume();
+                }
             }
         });
 

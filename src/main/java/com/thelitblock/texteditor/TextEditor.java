@@ -243,14 +243,16 @@ public class TextEditor extends Application {
         Button findNext = new Button("Next");
         Button findPrevious = new Button("Previous");
 
-        findNext.setOnAction(event -> searchText("next"));
-        findPrevious.setOnAction(event -> searchText("previous"));
+        findNext.setOnAction(event -> navigateSearchResult(true));
+        findPrevious.setOnAction(event -> navigateSearchResult(false));
 
         searchBar = new HBox(10, new Label("Find:"), searchText, findPrevious, findNext);
         searchBar.setAlignment(Pos.CENTER_LEFT);
         searchBar.setPadding(new Insets(5));
         searchBar.setManaged(false);
         searchBar.setVisible(false);
+
+        searchText.textProperty().addListener((obs, oldText, newText) -> highlightSearchResults(newText));
     }
 
     private void showSearchBar() {
@@ -271,6 +273,64 @@ public class TextEditor extends Application {
             searchBar.setVisible(false);
             VBox root = (VBox) scene.getRoot();
             root.getChildren().remove(searchBar);
+            clearHighlights();
+        }
+    }
+
+    private void highlightSearchResults(String query) {
+        CodeArea codeArea = getCurrentCodeArea();
+        if (codeArea == null) return;
+
+        codeArea.setStyleSpans(0, computeHighlighting(codeArea.getText()));
+
+        if (query == null || query.isEmpty()) return;
+
+        String text = codeArea.getText();
+        int index = 0;
+        while ((index = text.indexOf(query, index)) >= 0) {
+            int endIndex = index + query.length();
+            codeArea.setStyle(index, endIndex, Collections.singleton("search-highlight"));
+            index = endIndex;
+        }
+    }
+
+    private void clearHighlights() {
+        CodeArea codeArea = getCurrentCodeArea();
+        if (codeArea != null) {
+            codeArea.setStyleSpans(0, computeHighlighting(codeArea.getText()));
+        }
+    }
+
+    private void navigateSearchResult(boolean forward) {
+        CodeArea codeArea = getCurrentCodeArea();
+        if (codeArea == null) return;
+
+        String query = searchText.getText();
+        if (query == null || query.isEmpty()) return;
+
+        String text = codeArea.getText();
+        int currentPos = codeArea.getCaretPosition();
+        int index;
+
+        if (forward) {
+            index = text.indexOf(query, currentPos);
+            if (index == -1) index = text.indexOf(query);
+        }
+        else {
+            index = text.lastIndexOf(query, currentPos - query.length() - 1);
+            if (index == -1) index = text.lastIndexOf(query);
+        }
+
+        if (index != -1) {
+            codeArea.selectRange(index, index + query.length());
+            codeArea.requestFollowCaret();
+        }
+        else {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Search Result");
+            alert.setHeaderText(null);
+            alert.setContentText("No more matches found.");
+            alert.showAndWait();
         }
     }
 
@@ -474,30 +534,6 @@ public class TextEditor extends Application {
     public static void changeDarkTheme() {
         scene.getStylesheets().clear();
         scene.getStylesheets().add(Objects.requireNonNull(TextEditor.class.getResource("DarkTheme.css")).toExternalForm());
-    }
-
-    private void searchText(String direction) {
-        CodeArea codeArea = getCurrentCodeArea();
-        if (codeArea != null) {
-            String query = searchText.getText();
-            if (query == null || query.isEmpty()) return;
-
-            String text = codeArea.getText();
-            int startIndex = (direction.equals("next")) ? codeArea.getCaretPosition() : 0;
-            int index = direction.equals("next") ? text.indexOf(query, startIndex) : text.lastIndexOf(query, startIndex);
-
-            if (index != -1) {
-                codeArea.selectRange(index, index + query.length());
-                codeArea.requestFollowCaret();
-            }
-            else {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("Search Result");
-                alert.setHeaderText(null);
-                alert.setContentText("No matches found.");
-                alert.showAndWait();
-            }
-        }
     }
 
     public static void main(String[] args) {

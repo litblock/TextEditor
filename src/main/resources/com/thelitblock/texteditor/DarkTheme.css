@@ -143,5 +143,10 @@
     -fx-fill: #d19a66;
 }
 
+.search-highlight {
+    -fx-fill: yellow;
+    -fx-background-color: yellow;
+}
+
 
 

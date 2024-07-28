@@ -1,24 +1,19 @@
 package com.thelitblock.texteditor;
 
 import javafx.application.Application;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Font;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import org.fxmisc.flowless.VirtualizedScrollPane;
 import org.fxmisc.richtext.CodeArea;
-import org.fxmisc.richtext.LineNumberFactory;
 import java.io.*;
 import java.util.*;
-import javafx.geometry.Orientation;
-import static com.thelitblock.texteditor.SyntaxHighlighting.computeHighlighting;
+import javafx.scene.layout.BorderPane;
 
 public class TextEditor extends Application {
     static final TabPane tabPane = new TabPane();
@@ -42,6 +37,10 @@ public class TextEditor extends Application {
     private int currentSearchIndex = -1;
     private List<Integer> searchIndices = new ArrayList<>();
 
+    //folder
+    private TreeView<String> folderTreeView;
+    private TreeItem<String> rootItem;
+
     @Override
     public void start(Stage primaryStage) {
         try {
@@ -52,16 +51,34 @@ public class TextEditor extends Application {
             menuBarSetup = new MenuBarSetup(tabPane);
             menuBar = MenuBarSetup.getMenuBar();
 
-            VBox vBox = new VBox();
-            scene = new Scene(vBox, 800, 600);
-            vBox.getChildren().addAll(menuBar);
-            primaryStage.setScene(scene);
+            setupFolderTreeView();
 
+            //main
+            BorderPane mainLayout = new BorderPane();
+            mainLayout.setLeft(folderTreeView);  //folders on left
+            mainLayout.setCenter(tabPane);
+
+            // bottom
+            VBox bottomLayout = new VBox();
+            bottomLayout.getChildren().addAll(terminalOutput, commandInput);
+            VBox.setVgrow(terminalOutput, Priority.ALWAYS);
+            VBox.setVgrow(commandInput, Priority.NEVER);
+
+            //root
+            BorderPane rootLayout = new BorderPane();
+            rootLayout.setTop(menuBar);
+            rootLayout.setCenter(mainLayout);
+            rootLayout.setBottom(bottomLayout);
+
+            scene = new Scene(rootLayout, 800, 600);
+
+            // initialize components
             TerminalSetup terminalSetup = new TerminalSetup(terminalOutput, commandInput);
             searchBarSetup = new SearchBarSetup(searchBar, searchText, searchResultCount, scene, tabPane);
             EditorSetup editorSetup = new EditorSetup(menuBar, searchBar, tabPane, terminalSetup, scene, searchBarSetup);
 
             setupScene();
+            primaryStage.setScene(scene);
             primaryStage.setTitle("TextEditor");
             primaryStage.show();
         }
@@ -95,6 +112,72 @@ public class TextEditor extends Application {
         }
         else {
             System.err.println("DarkTheme.css not found");
+        }
+    }
+
+    private void setupFolderTreeView() {
+        rootItem = new TreeItem<>("Root");
+        folderTreeView = new TreeView<>(rootItem);
+        folderTreeView.setShowRoot(false);
+
+        folderTreeView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null) {
+                TreeItem<String> selectedItem = newValue;
+                File file = (File) selectedItem.getGraphic().getUserData();
+                if (file.isFile()) {
+                    openFile(file);
+                }
+            }
+        });
+
+        Button openDirButton = new Button("Open Folder");
+        openDirButton.setOnAction(e -> openFolder());
+        searchBar.getChildren().add(openDirButton);
+    }
+
+    private void openFolder() {
+        DirectoryChooser directoryChooser = new DirectoryChooser();
+        File selectedDirectory = directoryChooser.showDialog(primaryStage);
+
+        if (selectedDirectory != null) {
+            rootItem.getChildren().clear();
+            createTree(selectedDirectory, rootItem);
+        }
+    }
+
+    private void createTree(File directory, TreeItem<String> parent) {
+        for (File file : Objects.requireNonNull(directory.listFiles())) {
+            TreeItem<String> item = new TreeItem<>(file.getName());
+            parent.getChildren().add(item);
+
+            if (file.isDirectory()) {
+                createTree(file, item);
+            }
+            else {
+                item.setGraphic(new Label(file.getName()));
+                item.getGraphic().setUserData(file);
+            }
+        }
+    }
+
+    private void openFile(File file) {
+        currentFile = file;
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            CodeArea codeArea = getCurrentCodeArea();
+            TabData tabData = getCurrentTabData();
+            if (codeArea != null && tabData != null) {
+                codeArea.clear();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    codeArea.appendText(line + "\n");
+                }
+                tabData.isChanged = false;
+                Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+                currentTab.setText(file.getName());
+            }
+        }
+        catch (IOException e) {
+            System.out.println("Error reading file");
         }
     }
 

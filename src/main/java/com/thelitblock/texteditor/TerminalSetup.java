@@ -13,15 +13,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TerminalSetup {
-    private static TextArea terminalOutput;
-    private static TextField commandInput;
-    private static int historyIndex = 0;
-    private static final List<String> commandHistory = new ArrayList<>();
+    private TextArea terminalOutput;
+    private TextField commandInput;
+    private int historyIndex = 0;
+    private final List<String> commandHistory = new ArrayList<>();
 
-    public static void setupTerminal(TextArea terminalOutput, TextField commandInput) {
-        TerminalSetup.terminalOutput = terminalOutput;
-        TerminalSetup.commandInput = commandInput;
+    public TerminalSetup(TextArea terminalOutput, TextField commandInput) {
+        this.terminalOutput = terminalOutput;
+        this.commandInput = commandInput;
+        setupTerminal();
+    }
 
+    private void setupTerminal() {
         terminalOutput.setEditable(false);
         terminalOutput.setWrapText(true);
 
@@ -41,7 +44,8 @@ public class TerminalSetup {
                     commandInput.setText(commandHistory.get(historyIndex));
                     commandInput.positionCaret(commandInput.getText().length());
                 }
-            } else if (event.getCode() == KeyCode.DOWN) {
+            }
+            else if (event.getCode() == KeyCode.DOWN) {
                 if (historyIndex < commandHistory.size() - 1) {
                     historyIndex++;
                     commandInput.setText(commandHistory.get(historyIndex));
@@ -55,16 +59,14 @@ public class TerminalSetup {
         });
     }
 
-    public static VBox createTerminalPane(TextArea terminalOutput, TextField commandInput) {
-        setupTerminal(terminalOutput, commandInput);
-
+    public VBox createTerminalPane() {
         VBox terminalBox = new VBox(10);
         terminalBox.getChildren().addAll(terminalOutput, commandInput);
         VBox.setVgrow(terminalOutput, Priority.ALWAYS);
         return terminalBox;
     }
 
-    private static void executeCommand(String command) {
+    private void executeCommand(String command) {
         terminalOutput.appendText("> " + command + "\n");
         try {
             ProcessBuilder builder;

@@ -9,19 +9,22 @@ import javafx.scene.layout.VBox;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TerminalSetup {
-    private static TextArea terminalOutput = TextEditor.terminalOutput;
-    private static TextField commandInput = TextEditor.commandInput;
+    private static TextArea terminalOutput;
+    private static TextField commandInput;
     private static int historyIndex = 0;
-    private static final java.util.List<String> commandHistory = new java.util.ArrayList<>();
+    private static final List<String> commandHistory = new ArrayList<>();
 
-    static void setupTerminal() {
-        terminalOutput = new TextArea();
+    public static void setupTerminal(TextArea terminalOutput, TextField commandInput) {
+        TerminalSetup.terminalOutput = terminalOutput;
+        TerminalSetup.commandInput = commandInput;
+
         terminalOutput.setEditable(false);
         terminalOutput.setWrapText(true);
 
-        commandInput = new TextField();
         commandInput.setPromptText("Enter command and press Enter");
 
         commandInput.setOnAction(event -> {
@@ -38,8 +41,7 @@ public class TerminalSetup {
                     commandInput.setText(commandHistory.get(historyIndex));
                     commandInput.positionCaret(commandInput.getText().length());
                 }
-            }
-            else if (event.getCode() == KeyCode.DOWN) {
+            } else if (event.getCode() == KeyCode.DOWN) {
                 if (historyIndex < commandHistory.size() - 1) {
                     historyIndex++;
                     commandInput.setText(commandHistory.get(historyIndex));
@@ -53,7 +55,9 @@ public class TerminalSetup {
         });
     }
 
-    static VBox createTerminalPane() {
+    public static VBox createTerminalPane(TextArea terminalOutput, TextField commandInput) {
+        setupTerminal(terminalOutput, commandInput);
+
         VBox terminalBox = new VBox(10);
         terminalBox.getChildren().addAll(terminalOutput, commandInput);
         VBox.setVgrow(terminalOutput, Priority.ALWAYS);

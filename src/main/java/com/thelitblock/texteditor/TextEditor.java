@@ -33,8 +33,8 @@ public class TextEditor extends Application {
     private static int untitledCounter = 1;
 
     // Terminal stuff
-    protected static TextArea terminalOutput;
-    protected static TextField commandInput;
+    private static final TextArea terminalOutput = new TextArea();
+    private static final TextField commandInput = new TextField();
 
     //find and replace
     private Label searchResultCount;
@@ -72,11 +72,11 @@ public class TextEditor extends Application {
         plusTab.setClosable(false);
         tabPane.getTabs().add(plusTab);
 
-        TerminalSetup.setupTerminal();
+        TerminalSetup.setupTerminal(terminalOutput, commandInput);
 
         SplitPane splitPane = new SplitPane();
         splitPane.setOrientation(Orientation.VERTICAL);
-        splitPane.getItems().addAll(tabPane, TerminalSetup.createTerminalPane());
+        splitPane.getItems().addAll(tabPane, TerminalSetup.createTerminalPane(terminalOutput, commandInput));
 
         VBox editorBox = new VBox(menuBar, searchBar, splitPane);
         VBox.setVgrow(splitPane, Priority.ALWAYS);
@@ -543,6 +543,14 @@ public class TextEditor extends Application {
     public static void changeDarkTheme() {
         scene.getStylesheets().clear();
         scene.getStylesheets().add(Objects.requireNonNull(TextEditor.class.getResource("DarkTheme.css")).toExternalForm());
+    }
+
+    public static TextArea getTerminalOutput() {
+        return terminalOutput;
+    }
+
+    public static TextField getCommandInput() {
+        return commandInput;
     }
 
     public static void main(String[] args) {

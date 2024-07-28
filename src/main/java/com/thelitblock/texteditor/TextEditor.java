@@ -29,6 +29,8 @@ public class TextEditor extends Application {
     static MenuBar menuBar;
     static File currentFile = null;
 
+    //search bar
+    private SearchBarSetup searchBarSetup;
     // Terminal stuff
     private static TextArea terminalOutput;
     private static TextField commandInput;
@@ -46,7 +48,6 @@ public class TextEditor extends Application {
             commandInput = new TextField();
 
             setupMenuBar();
-            setupSearchBar();
 
             VBox vBox = new VBox();
             scene = new Scene(vBox, 800, 600);
@@ -54,7 +55,8 @@ public class TextEditor extends Application {
             primaryStage.setScene(scene);
 
             TerminalSetup terminalSetup = new TerminalSetup(terminalOutput, commandInput);
-            EditorSetup editorSetup = new EditorSetup(menuBar, searchBar, tabPane, terminalSetup, scene);
+            searchBarSetup = new SearchBarSetup(searchBar, searchText, searchResultCount, scene, tabPane);
+            EditorSetup editorSetup = new EditorSetup(menuBar, searchBar, tabPane, terminalSetup, scene, searchBarSetup);
 
             setupScene();
             primaryStage.setTitle("TextEditor");
@@ -81,194 +83,20 @@ public class TextEditor extends Application {
         themeMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
     }
 
-    private void setupSearchBar() {
-        searchText = new TextField();
-        searchText.setPromptText("Search");
-
-        TextField replaceText = new TextField();
-        replaceText.setPromptText("Replace");
-
-        Button prevButton = new Button("Prev");
-        Button nextButton = new Button("Next");
-        Button replaceButton = new Button("Replace");
-        Button replaceAllButton = new Button("Replace All");
-
-        searchResultCount = new Label("0/0");
-
-        searchText.textProperty().addListener((obs, oldText, newText) -> {
-            updateSearchResults(newText);
-        });
-
-        prevButton.setOnAction(event -> navigateSearchResults(-1));
-        nextButton.setOnAction(event -> navigateSearchResults(1));
-        replaceButton.setOnAction(event -> replaceCurrentOccurrence(replaceText.getText()));
-        replaceAllButton.setOnAction(event -> replaceAllOccurrences(replaceText.getText()));
-
-        searchBar.getChildren().addAll(searchText, replaceText, replaceButton, replaceAllButton, prevButton, nextButton, searchResultCount);
-        searchBar.setSpacing(5);
-        searchBar.setAlignment(Pos.CENTER_LEFT);
-        searchBar.setPadding(new Insets(5));
-        searchBar.setManaged(false);
-        searchBar.setVisible(false);
-
-        searchBar.setId("searchBar");
-        searchResultCount.setId("searchResultCount");
-    }
-
-    private void replaceCurrentOccurrence(String replacement) {
-        if (searchIndices.isEmpty() || currentSearchIndex == -1) {
-            return;
-        }
-
-        Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
-        if (currentTab != null) {
-            CodeArea codeArea = ((TabData) currentTab.getUserData()).codeArea;
-            int startPos = searchIndices.get(currentSearchIndex);
-            int endPos = startPos + searchText.getText().length();
-            codeArea.replaceText(startPos, endPos, replacement);
-
-            updateSearchResults(searchText.getText());
-            navigateSearchResults(1);
-        }
-    }
-
-    private void replaceAllOccurrences(String replacement) {
-        if (searchIndices.isEmpty()) {
-            return;
-        }
-
-        Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
-        if (currentTab != null) {
-            CodeArea codeArea = ((TabData) currentTab.getUserData()).codeArea;
-            String searchTextStr = searchText.getText();
-            String text = codeArea.getText();
-            text = text.replaceAll(java.util.regex.Pattern.quote(searchTextStr), replacement);
-            codeArea.replaceText(0, codeArea.getLength(), text);
-
-            updateSearchResults(searchTextStr);
-            navigateSearchResults(1);
-        }
-    }
-
-    private void updateSearchResults(String query) {
-        searchIndices.clear();
-        currentSearchIndex = -1;
-
-        if (query.isEmpty()) {
-            updateSearchResultCount();
-            clearHighlights();
-            return;
-        }
-
-        Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
-        if (currentTab != null) {
-            CodeArea codeArea = ((TabData) currentTab.getUserData()).codeArea;
-            String text = codeArea.getText();
-            int index = text.indexOf(query, 0);
-            while (index != -1) {
-                searchIndices.add(index);
-                index = text.indexOf(query, index + query.length());
-            }
-
-            highlightSearchResults(query);
-        }
-
-        navigateSearchResults(1);
-    }
-
-    private void showSearchBar() {
-        if (!searchBar.isVisible()) {
-            searchBar.setManaged(true);
-            searchBar.setVisible(true);
-            VBox root = (VBox) scene.getRoot();
-            if (!root.getChildren().contains(searchBar)) {
-                root.getChildren().add(1, searchBar);
-            }
-            searchText.requestFocus();
-        }
-    }
-
-    private void hideSearchBar() {
-        if (searchBar.isVisible()) {
-            searchBar.setManaged(false);
-            searchBar.setVisible(false);
-            VBox root = (VBox) scene.getRoot();
-            root.getChildren().remove(searchBar);
-            clearHighlights();
-        }
-    }
-
-    private void highlightSearchResults(String query) {
-        CodeArea codeArea = getCurrentCodeArea();
-        if (codeArea == null) return;
-
-        codeArea.setStyleSpans(0, computeHighlighting(codeArea.getText()));
-
-        if (query == null || query.isEmpty()) return;
-
-        String text = codeArea.getText();
-        int index = 0;
-        while ((index = text.indexOf(query, index)) >= 0) {
-            int endIndex = index + query.length();
-            codeArea.setStyle(index, endIndex, Collections.singleton("search-highlight"));
-            index = endIndex;
-        }
-    }
-
-    private void clearHighlights() {
-        CodeArea codeArea = getCurrentCodeArea();
-        if (codeArea != null) {
-            codeArea.setStyleSpans(0, computeHighlighting(codeArea.getText()));
-        }
-    }
-
-    private void navigateSearchResults(int direction) {
-        if (searchIndices.isEmpty()) {
-            return;
-        }
-
-        currentSearchIndex += direction;
-
-        if (currentSearchIndex < 0) {
-            currentSearchIndex = searchIndices.size() - 1;
-        }
-        else if (currentSearchIndex >= searchIndices.size()) {
-            currentSearchIndex = 0;
-        }
-
-        Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
-        if (currentTab != null) {
-            CodeArea codeArea = ((TabData) currentTab.getUserData()).codeArea;
-            int pos = searchIndices.get(currentSearchIndex);
-            codeArea.selectRange(pos, pos + searchText.getText().length());
-        }
-
-        updateSearchResultCount();
-    }
-
-    private void updateSearchResultCount() {
-        if (searchIndices.isEmpty()) {
-            searchResultCount.setText("0/0");
-        }
-        else {
-            searchResultCount.setText((currentSearchIndex + 1) + "/" + searchIndices.size());
-        }
-    }
-
     private void setupScene() {
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.F && event.isControlDown()) {
                 if (searchBar.isVisible()) {
-                    hideSearchBar();
+                    searchBarSetup.hideSearchBar();
                 }
                 else {
-                    showSearchBar();
+                    searchBarSetup.showSearchBar();
                 }
                 event.consume();
             }
             else if (event.getCode() == KeyCode.ENTER) {
                 if (searchBar.isVisible()) {
-                    navigateSearchResults(1);
+                    searchBarSetup.navigateSearchResults(1);
                     event.consume();
                 }
             }
@@ -285,7 +113,7 @@ public class TextEditor extends Application {
 
     //menu functions
 
-    private static CodeArea getCurrentCodeArea() {
+    static CodeArea getCurrentCodeArea() {
         Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
         if (currentTab != null) {
             TabData tabData = (TabData) currentTab.getUserData();

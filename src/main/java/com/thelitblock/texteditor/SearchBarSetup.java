@@ -1,60 +1,213 @@
 package com.thelitblock.texteditor;
 
-import javafx.scene.control.Button;
-import javafx.scene.control.Tab;
-import javafx.scene.control.TextField;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.fxmisc.richtext.CodeArea;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import static com.thelitblock.texteditor.SyntaxHighlighting.computeHighlighting;
+
 public class SearchBarSetup {
-    public static void setupSearchBar(VBox rootLayout) {
-        TextField searchField = new TextField();
-        searchField.setPromptText("Search...");
+    private HBox searchBar;
+    private TextField searchText;
+    private Label searchResultCount;
+    private Scene scene;
+    private TabPane tabPane;
+    private int currentSearchIndex = -1;
+    private List<Integer> searchIndices = new ArrayList<>();
 
-        Button nextButton = new Button("Next");
-        Button prevButton = new Button("Prev");
-
-        nextButton.setOnAction(event -> searchText(searchField.getText(), true));
-        prevButton.setOnAction(event -> searchText(searchField.getText(), false));
-
-        searchField.setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.ENTER) {
-                searchText(searchField.getText(), true);
-            }
-        });
-
-        HBox searchBar = new HBox(5);
-        searchBar.getChildren().addAll(searchField, prevButton, nextButton);
-        rootLayout.getChildren().add(0, searchBar);
+    public SearchBarSetup(HBox searchBar, TextField searchText, Label searchResultCount, Scene scene, TabPane tabPane) {
+        this.searchBar = searchBar;
+        this.searchText = searchText;
+        this.searchResultCount = searchResultCount;
+        this.scene = scene;
+        this.tabPane = tabPane;
+        setupSearchBar();
     }
 
-    private static void searchText(String searchText, boolean forward) {
-        Tab currentTab = TextEditor.tabPane.getSelectionModel().getSelectedItem();
-        if (currentTab != null && currentTab.getUserData() instanceof TabData) {
-            CodeArea codeArea = ((TabData) currentTab.getUserData()).codeArea;
-            if (forward) {
-                codeArea.requestFollowCaret();
-                int start = codeArea.getCaretPosition();
-                int end = codeArea.getText().indexOf(searchText, start);
-                if (end == -1) {
-                    end = codeArea.getText().indexOf(searchText);
-                }
-                if (end != -1) {
-                    codeArea.selectRange(end, end + searchText.length());
-                }
-            }
-            else {
-                int start = codeArea.getCaretPosition();
-                int end = codeArea.getText().lastIndexOf(searchText, start);
-                if (end == -1) {
-                    end = codeArea.getText().lastIndexOf(searchText);
-                }
-                if (end != -1) {
-                    codeArea.selectRange(end, end + searchText.length());
-                }
-            }
+    private void setupSearchBar() {
+        searchText = new TextField();
+        searchText.setPromptText("Search");
+
+        TextField replaceText = new TextField();
+        replaceText.setPromptText("Replace");
+
+        Button prevButton = new Button("Prev");
+        Button nextButton = new Button("Next");
+        Button replaceButton = new Button("Replace");
+        Button replaceAllButton = new Button("Replace All");
+
+        searchResultCount = new Label("0/0");
+
+        searchText.textProperty().addListener((obs, oldText, newText) -> {
+            updateSearchResults(newText);
+        });
+
+        prevButton.setOnAction(event -> navigateSearchResults(-1));
+        nextButton.setOnAction(event -> navigateSearchResults(1));
+        replaceButton.setOnAction(event -> replaceCurrentOccurrence(replaceText.getText()));
+        replaceAllButton.setOnAction(event -> replaceAllOccurrences(replaceText.getText()));
+
+        searchBar.getChildren().addAll(searchText, replaceText, replaceButton, replaceAllButton, prevButton, nextButton, searchResultCount);
+        searchBar.setSpacing(5);
+        searchBar.setAlignment(Pos.CENTER_LEFT);
+        searchBar.setPadding(new Insets(5));
+        searchBar.setManaged(false);
+        searchBar.setVisible(false);
+
+        searchBar.setId("searchBar");
+        searchResultCount.setId("searchResultCount");
+    }
+
+    private void replaceCurrentOccurrence(String replacement) {
+        if (searchIndices.isEmpty() || currentSearchIndex == -1) {
+            return;
         }
+
+        Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+        if (currentTab != null) {
+            CodeArea codeArea = ((TabData) currentTab.getUserData()).codeArea;
+            int startPos = searchIndices.get(currentSearchIndex);
+            int endPos = startPos + searchText.getText().length();
+            codeArea.replaceText(startPos, endPos, replacement);
+
+            updateSearchResults(searchText.getText());
+            navigateSearchResults(1);
+        }
+    }
+
+    private void replaceAllOccurrences(String replacement) {
+        if (searchIndices.isEmpty()) {
+            return;
+        }
+
+        Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+        if (currentTab != null) {
+            CodeArea codeArea = ((TabData) currentTab.getUserData()).codeArea;
+            String searchTextStr = searchText.getText();
+            String text = codeArea.getText();
+            text = text.replaceAll(java.util.regex.Pattern.quote(searchTextStr), replacement);
+            codeArea.replaceText(0, codeArea.getLength(), text);
+
+            updateSearchResults(searchTextStr);
+            navigateSearchResults(1);
+        }
+    }
+
+    void updateSearchResults(String query) {
+        searchIndices.clear();
+        currentSearchIndex = -1;
+
+        if (query.isEmpty()) {
+            updateSearchResultCount();
+            clearHighlights();
+            return;
+        }
+
+        Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+        if (currentTab != null) {
+            CodeArea codeArea = ((TabData) currentTab.getUserData()).codeArea;
+            String text = codeArea.getText();
+            int index = text.indexOf(query, 0);
+            while (index != -1) {
+                searchIndices.add(index);
+                index = text.indexOf(query, index + query.length());
+            }
+
+            highlightSearchResults(query);
+        }
+
+        navigateSearchResults(1);
+    }
+
+    void showSearchBar() {
+        if (!searchBar.isVisible()) {
+            searchBar.setManaged(true);
+            searchBar.setVisible(true);
+            VBox root = (VBox) scene.getRoot();
+            if (!root.getChildren().contains(searchBar)) {
+                root.getChildren().add(1, searchBar);
+            }
+            searchText.requestFocus();
+        }
+    }
+
+    void hideSearchBar() {
+        if (searchBar.isVisible()) {
+            searchBar.setManaged(false);
+            searchBar.setVisible(false);
+            VBox root = (VBox) scene.getRoot();
+            root.getChildren().remove(searchBar);
+            clearHighlights();
+        }
+    }
+
+    private void highlightSearchResults(String query) {
+        CodeArea codeArea = TextEditor.getCurrentCodeArea();
+        if (codeArea == null) return;
+
+        codeArea.setStyleSpans(0, computeHighlighting(codeArea.getText()));
+
+        if (query == null || query.isEmpty()) return;
+
+        String text = codeArea.getText();
+        int index = 0;
+        while ((index = text.indexOf(query, index)) >= 0) {
+            int endIndex = index + query.length();
+            codeArea.setStyle(index, endIndex, Collections.singleton("search-highlight"));
+            index = endIndex;
+        }
+    }
+
+    private void clearHighlights() {
+        CodeArea codeArea = TextEditor.getCurrentCodeArea();
+        if (codeArea != null) {
+            codeArea.setStyleSpans(0, computeHighlighting(codeArea.getText()));
+        }
+    }
+
+    void navigateSearchResults(int direction) {
+        if (searchIndices.isEmpty()) {
+            return;
+        }
+
+        currentSearchIndex += direction;
+
+        if (currentSearchIndex < 0) {
+            currentSearchIndex = searchIndices.size() - 1;
+        }
+        else if (currentSearchIndex >= searchIndices.size()) {
+            currentSearchIndex = 0;
+        }
+
+        Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
+        if (currentTab != null) {
+            CodeArea codeArea = ((TabData) currentTab.getUserData()).codeArea;
+            int pos = searchIndices.get(currentSearchIndex);
+            codeArea.selectRange(pos, pos + searchText.getText().length());
+        }
+
+        updateSearchResultCount();
+    }
+
+    private void updateSearchResultCount() {
+        if (searchIndices.isEmpty()) {
+            searchResultCount.setText("0/0");
+        }
+        else {
+            searchResultCount.setText((currentSearchIndex + 1) + "/" + searchIndices.size());
+        }
+    }
+
+    String getSearchText() {
+        return searchText.getText();
     }
 }

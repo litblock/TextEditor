@@ -24,12 +24,15 @@ public class EditorSetup {
     private static int untitledCounter = 1;
     private Scene scene;
 
-    public EditorSetup(MenuBar menuBar, HBox searchBar, TabPane tabPane, TerminalSetup terminalSetup, Scene scene) {
+    private static SearchBarSetup searchBarSetup;
+
+    public EditorSetup(MenuBar menuBar, HBox searchBar, TabPane tabPane, TerminalSetup terminalSetup, Scene scene, SearchBarSetup searchBarSetup) {
         this.menuBar = menuBar;
         this.searchBar = searchBar;
         this.tabPane = tabPane;
         this.terminalSetup = terminalSetup;
         this.scene = scene;
+        this.searchBarSetup = searchBarSetup;
         setupEditor();
     }
 
@@ -70,6 +73,7 @@ public class EditorSetup {
         codeArea.setStyle("-fx-font-family: 'Menlo'; -fx-font-size: 10pt");
 
         codeArea.textProperty().addListener((observable, oldValue, newValue) -> {
+            searchBarSetup.updateSearchResults(searchBarSetup.getSearchText());
             Tab currentTab = tabPane.getSelectionModel().getSelectedItem();
             TabData tabData = (TabData) currentTab.getUserData();
             if (tabData != null) {

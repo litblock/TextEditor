@@ -136,7 +136,7 @@ public class EditorSetup {
         return tab;
     }
 
-    private static String getNextUntitledName() {
+    static String getNextUntitledName() {
         if (!untitledNumbers.isEmpty()) {
             int nextNumber = Collections.min(untitledNumbers);
             untitledNumbers.remove(nextNumber);

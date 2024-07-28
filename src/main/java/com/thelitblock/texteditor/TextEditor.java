@@ -29,8 +29,10 @@ public class TextEditor extends Application {
     static MenuBar menuBar;
     static File currentFile = null;
 
+    private MenuEventHandler menuEventHandler;
     //search bar
     private SearchBarSetup searchBarSetup;
+    private MenuBarSetup menuBarSetup;
     // Terminal stuff
     private static TextArea terminalOutput;
     private static TextField commandInput;
@@ -47,7 +49,8 @@ public class TextEditor extends Application {
             terminalOutput = new TextArea();
             commandInput = new TextField();
 
-            setupMenuBar();
+            menuBarSetup = new MenuBarSetup(tabPane);
+            menuBar = MenuBarSetup.getMenuBar();
 
             VBox vBox = new VBox();
             scene = new Scene(vBox, 800, 600);
@@ -65,22 +68,6 @@ public class TextEditor extends Application {
         catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    private void setupMenuBar() {
-        menuBar = new MenuBar();
-        Menu fileMenu = new Menu("File");
-        fileMenu.getItems().addAll(new MenuItem("New"), new MenuItem("Open"), new MenuItem("Save"), new MenuItem("Save As"), new MenuItem("Exit"));
-        Menu editMenu = new Menu("Edit");
-        editMenu.getItems().addAll(new MenuItem("Cut"), new MenuItem("Copy"), new MenuItem("Paste"), new MenuItem("Select All"));
-        Menu themeMenu = new Menu("Theme");
-        themeMenu.getItems().addAll(new MenuItem("Dark Theme"), new MenuItem("Light Theme"));
-
-        menuBar.getMenus().addAll(fileMenu, editMenu, themeMenu);
-
-        fileMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
-        editMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
-        themeMenu.getItems().forEach(item -> item.setOnAction(new MenuEventHandler()));
     }
 
     private void setupScene() {

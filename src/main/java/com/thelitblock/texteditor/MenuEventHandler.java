@@ -2,15 +2,17 @@ package com.thelitblock.texteditor;
 
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.MenuItem;
+import javafx.scene.control.*;
 
 import java.util.Objects;
 import java.util.Optional;
 
 public class MenuEventHandler implements EventHandler<ActionEvent> {
+    private final TabPane tabPane;
+
+    public MenuEventHandler(TabPane tabPane) {
+        this.tabPane = tabPane;
+    }
     public void handle(ActionEvent e) {
         MenuItem mItem = (MenuItem) e.getSource();
         if ("New".equals(mItem.getText()) || "Open".equals(mItem.getText()) || "Exit".equals(mItem.getText())) {
@@ -36,7 +38,10 @@ public class MenuEventHandler implements EventHandler<ActionEvent> {
         }
 
         if ("New".equals(mItem.getText())) {
-            TextEditor.tabPane.getTabs().add(EditorSetup.createNewTab("Untitled"));
+            String title = EditorSetup.getNextUntitledName();
+            Tab newTabToAdd = EditorSetup.createNewTab(title);
+            tabPane.getTabs().add(tabPane.getTabs().size() - 1, newTabToAdd);
+            tabPane.getSelectionModel().select(newTabToAdd);
         }
         else if ("Open".equals(mItem.getText())) {
             TextEditor.displayFile();

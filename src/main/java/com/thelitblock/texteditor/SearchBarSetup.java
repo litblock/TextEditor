@@ -2,9 +2,7 @@ package com.thelitblock.texteditor;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.fxmisc.richtext.CodeArea;
@@ -19,16 +17,14 @@ public class SearchBarSetup {
     private HBox searchBar;
     private TextField searchText;
     private Label searchResultCount;
-    private Scene scene;
     private TabPane tabPane;
     private int currentSearchIndex = -1;
     private List<Integer> searchIndices = new ArrayList<>();
 
-    public SearchBarSetup(HBox searchBar, TextField searchText, Label searchResultCount, Scene scene, TabPane tabPane) {
+    public SearchBarSetup(HBox searchBar, TextField searchText, Label searchResultCount, TabPane tabPane) {
         this.searchBar = searchBar;
         this.searchText = searchText;
         this.searchResultCount = searchResultCount;
-        this.scene = scene;
         this.tabPane = tabPane;
         setupSearchBar();
     }
@@ -47,9 +43,7 @@ public class SearchBarSetup {
 
         searchResultCount = new Label("0/0");
 
-        searchText.textProperty().addListener((obs, oldText, newText) -> {
-            updateSearchResults(newText);
-        });
+        searchText.textProperty().addListener((obs, oldText, newText) -> updateSearchResults(newText));
 
         prevButton.setOnAction(event -> navigateSearchResults(-1));
         nextButton.setOnAction(event -> navigateSearchResults(1));
@@ -132,7 +126,7 @@ public class SearchBarSetup {
         if (!searchBar.isVisible()) {
             searchBar.setManaged(true);
             searchBar.setVisible(true);
-            VBox root = (VBox) scene.getRoot();
+            VBox root = (VBox) tabPane.getScene().getRoot().lookup("#rootVBox");
             if (!root.getChildren().contains(searchBar)) {
                 root.getChildren().add(1, searchBar);
             }
@@ -144,7 +138,7 @@ public class SearchBarSetup {
         if (searchBar.isVisible()) {
             searchBar.setManaged(false);
             searchBar.setVisible(false);
-            VBox root = (VBox) scene.getRoot();
+            VBox root = (VBox) tabPane.getScene().getRoot().lookup("#rootVBox");
             root.getChildren().remove(searchBar);
             clearHighlights();
         }

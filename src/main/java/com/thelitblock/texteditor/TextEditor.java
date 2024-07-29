@@ -64,9 +64,9 @@ public class TextEditor extends Application {
             folderSetup = new FolderSetup(searchBar, folderTreeView, rootItem);
             folderSetup.setupFolderTreeView();
 
-            searchBarSetup = new SearchBarSetup(searchBar, searchText, searchResultCount, scene, tabPane);
+            searchBarSetup = new SearchBarSetup(searchBar, searchText, searchResultCount, tabPane);
             TerminalSetup terminalSetup = new TerminalSetup(terminalOutput, commandInput);
-            EditorSetup editorSetup = new EditorSetup(menuBar, searchBar, tabPane, terminalSetup, scene, searchBarSetup);
+            EditorSetup editorSetup = new EditorSetup(menuBar, searchBar, tabPane, terminalSetup, searchBarSetup);
 
             setupUI();
 

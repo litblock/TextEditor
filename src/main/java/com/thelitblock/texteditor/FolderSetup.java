@@ -12,6 +12,15 @@ public class FolderSetup {
     private TreeItem<String> rootItem;
     private static final String FOLDER_ICON = "\uD83D\uDCC1"; // 📁
     private static final String FILE_ICON = "\uD83D\uDCC4"; // 📄
+    private static final String JAVA_ICON = "☕";
+    private static final String PYTHON_ICON = "\uD83D\uDC0D";
+    private static final String JS_ICON = "JS";
+    private static final String CPP_ICON = "C++";
+    private static final String C_ICON = "C";
+    private static final String HTML_ICON = "\uD83C\uDF10";
+    private static final String CSS_ICON = "\uD83C\uDF08";
+    private static final String JSON_ICON = "{}";
+    private static final String XML_ICON = "</>";
 
     public FolderSetup(HBox searchBar, TreeView<String> folderTreeView, TreeItem<String> rootItem) {
         this.folderTreeView = folderTreeView;
@@ -47,7 +56,8 @@ public class FolderSetup {
                             setStyle("-fx-text-fill: #c678dd;");
                         }
                         else {
-                            setText(FILE_ICON + " " + item);
+                            String icon = getFileIcon(file.getName());
+                            setText(icon + " " + item);
                             setStyle("-fx-text-fill: #61afef;");
                         }
                     }
@@ -60,13 +70,44 @@ public class FolderSetup {
         });
     }
 
+    private String getFileIcon(String fileName) {
+        String extension = getFileExtension(fileName);
+        switch (extension.toLowerCase()) {
+            case "java":
+                return JAVA_ICON;
+            case "py":
+                return PYTHON_ICON;
+            case "js":
+                return JS_ICON;
+            case "cpp":
+                return CPP_ICON;
+            case "c":
+                return C_ICON;
+            case "html":
+                return HTML_ICON;
+            case "css":
+                return CSS_ICON;
+            case "json":
+                return JSON_ICON;
+            case "xml":
+                return XML_ICON;
+            default:
+                return FILE_ICON;
+        }
+    }
+
+    private String getFileExtension(String fileName) {
+        int dotIndex = fileName.lastIndexOf('.');
+        return (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1);
+    }
+
     public void setupFolderTreeView() {
         folderTreeView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 TreeItem<String> selectedItem = newValue;
                 File file = (File) selectedItem.getGraphic().getUserData();
                 if (file.isFile()) {
-                    TextEditor.openFile(file);
+                    TextEditor.openFileInNewTab(file);
                 }
             }
         });

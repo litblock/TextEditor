@@ -11,6 +11,7 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import org.fxmisc.flowless.VirtualizedScrollPane;
 import org.fxmisc.richtext.CodeArea;
 import java.io.*;
 import java.util.*;
@@ -39,6 +40,7 @@ public class TextEditor extends Application {
     private int currentSearchIndex = -1;
     private List<Integer> searchIndices = new ArrayList<>();
 
+    private static EditorSetup editorSetup;
     //folder
     private TreeView<String> folderTreeView;
     private static TreeItem<String> rootItem;
@@ -66,7 +68,7 @@ public class TextEditor extends Application {
 
             searchBarSetup = new SearchBarSetup(searchBar, searchText, searchResultCount, tabPane);
             TerminalSetup terminalSetup = new TerminalSetup(terminalOutput, commandInput);
-            EditorSetup editorSetup = new EditorSetup(menuBar, searchBar, tabPane, terminalSetup, searchBarSetup);
+            editorSetup = new EditorSetup(menuBar, searchBar, tabPane, terminalSetup, searchBarSetup);
 
             setupUI();
 
@@ -170,6 +172,29 @@ public class TextEditor extends Application {
             }
         }
         return null;
+    }
+
+    public static void openFileInNewTab(File file) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            CodeArea codeArea = new CodeArea();
+            StringBuilder content = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                content.append(line).append("\n");
+            }
+            codeArea.replaceText(content.toString());
+
+            String fileName = file.getName();
+            Tab newTab = EditorSetup.createNewTab(fileName);
+            ((VirtualizedScrollPane<CodeArea>) newTab.getContent()).getContent().replaceText(content.toString());
+            TabData tabData = new TabData(codeArea);
+            newTab.setUserData(tabData);
+            tabPane.getTabs().add(tabPane.getTabs().size() - 1, newTab);
+            tabPane.getSelectionModel().select(newTab);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void displayFile() {

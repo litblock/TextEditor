@@ -10,6 +10,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import org.fxmisc.richtext.CodeArea;
 import java.io.*;
 import java.util.*;
@@ -32,6 +33,7 @@ public class TextEditor extends Application {
     private static TextArea terminalOutput;
     private static TextField commandInput;
 
+    private static FolderSetup folderSetup;
     //find and replace
     private Label searchResultCount;
     private int currentSearchIndex = -1;
@@ -39,45 +41,35 @@ public class TextEditor extends Application {
 
     //folder
     private TreeView<String> folderTreeView;
-    private TreeItem<String> rootItem;
+    private static TreeItem<String> rootItem;
+
+    public static Window getPrimaryStage() {
+        return primaryStage;
+    }
 
     @Override
     public void start(Stage primaryStage) {
         try {
             TextEditor.primaryStage = primaryStage;
+
             terminalOutput = new TextArea();
             commandInput = new TextField();
+
+            rootItem = new TreeItem<>("Root");
+            folderTreeView = new TreeView<>(rootItem);
 
             menuBarSetup = new MenuBarSetup(tabPane);
             menuBar = MenuBarSetup.getMenuBar();
 
-            setupFolderTreeView();
+            folderSetup = new FolderSetup(searchBar, folderTreeView, rootItem);
+            folderSetup.setupFolderTreeView();
 
-            //main
-            BorderPane mainLayout = new BorderPane();
-            mainLayout.setLeft(folderTreeView);  //folders on left
-            mainLayout.setCenter(tabPane);
-
-            // bottom
-            VBox bottomLayout = new VBox();
-            bottomLayout.getChildren().addAll(terminalOutput, commandInput);
-            VBox.setVgrow(terminalOutput, Priority.ALWAYS);
-            VBox.setVgrow(commandInput, Priority.NEVER);
-
-            //root
-            BorderPane rootLayout = new BorderPane();
-            rootLayout.setTop(menuBar);
-            rootLayout.setCenter(mainLayout);
-            rootLayout.setBottom(bottomLayout);
-
-            scene = new Scene(rootLayout, 800, 600);
-
-            // initialize components
-            TerminalSetup terminalSetup = new TerminalSetup(terminalOutput, commandInput);
             searchBarSetup = new SearchBarSetup(searchBar, searchText, searchResultCount, scene, tabPane);
+            TerminalSetup terminalSetup = new TerminalSetup(terminalOutput, commandInput);
             EditorSetup editorSetup = new EditorSetup(menuBar, searchBar, tabPane, terminalSetup, scene, searchBarSetup);
 
-            setupScene();
+            setupUI();
+
             primaryStage.setScene(scene);
             primaryStage.setTitle("TextEditor");
             primaryStage.show();
@@ -85,6 +77,26 @@ public class TextEditor extends Application {
         catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void setupUI() {
+
+        BorderPane mainLayout = new BorderPane();
+        mainLayout.setLeft(folderSetup.getFolderTreeView());
+        mainLayout.setCenter(tabPane);
+
+        VBox bottomLayout = new VBox();
+        bottomLayout.getChildren().addAll(terminalOutput, commandInput);
+        VBox.setVgrow(terminalOutput, Priority.ALWAYS);
+        VBox.setVgrow(commandInput, Priority.NEVER);
+
+        BorderPane rootLayout = new BorderPane();
+        rootLayout.setTop(menuBar);
+        rootLayout.setCenter(mainLayout);
+        rootLayout.setBottom(bottomLayout);
+
+        scene = new Scene(rootLayout, 800, 600);
+        setupScene();
     }
 
     private void setupScene() {
@@ -115,52 +127,17 @@ public class TextEditor extends Application {
         }
     }
 
-    private void setupFolderTreeView() {
-        rootItem = new TreeItem<>("Root");
-        folderTreeView = new TreeView<>(rootItem);
-        folderTreeView.setShowRoot(false);
-
-        folderTreeView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue != null) {
-                TreeItem<String> selectedItem = newValue;
-                File file = (File) selectedItem.getGraphic().getUserData();
-                if (file.isFile()) {
-                    openFile(file);
-                }
-            }
-        });
-
-        Button openDirButton = new Button("Open Folder");
-        openDirButton.setOnAction(e -> openFolder());
-        searchBar.getChildren().add(openDirButton);
-    }
-
-    private void openFolder() {
+    static void openFolder() {
         DirectoryChooser directoryChooser = new DirectoryChooser();
         File selectedDirectory = directoryChooser.showDialog(primaryStage);
 
         if (selectedDirectory != null) {
             rootItem.getChildren().clear();
-            createTree(selectedDirectory, rootItem);
+            folderSetup.createTree(selectedDirectory, rootItem);
         }
     }
 
-    private void createTree(File directory, TreeItem<String> parent) {
-        for (File file : Objects.requireNonNull(directory.listFiles())) {
-            TreeItem<String> item = new TreeItem<>(file.getName());
-            parent.getChildren().add(item);
-
-            if (file.isDirectory()) {
-                createTree(file, item);
-            }
-            else {
-                item.setGraphic(new Label(file.getName()));
-                item.getGraphic().setUserData(file);
-            }
-        }
-    }
-
-    private void openFile(File file) {
+    static void openFile(File file) {
         currentFile = file;
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             CodeArea codeArea = getCurrentCodeArea();

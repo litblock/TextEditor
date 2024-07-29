@@ -22,17 +22,14 @@ public class EditorSetup {
     private TerminalSetup terminalSetup;
     private static Set<Integer> untitledNumbers = new HashSet<>();
     private static int untitledCounter = 1;
-    private Scene scene;
-
     private static SearchBarSetup searchBarSetup;
 
-    public EditorSetup(MenuBar menuBar, HBox searchBar, TabPane tabPane, TerminalSetup terminalSetup, Scene scene, SearchBarSetup searchBarSetup) {
+    public EditorSetup(MenuBar menuBar, HBox searchBar, TabPane tabPane, TerminalSetup terminalSetup, SearchBarSetup searchBarSetup) {
         this.menuBar = menuBar;
         this.searchBar = searchBar;
-        this.tabPane = tabPane;
+        EditorSetup.tabPane = tabPane;
         this.terminalSetup = terminalSetup;
-        this.scene = scene;
-        this.searchBarSetup = searchBarSetup;
+        EditorSetup.searchBarSetup = searchBarSetup;
         setupEditor();
     }
 
@@ -45,15 +42,6 @@ public class EditorSetup {
         plusTab.setClosable(false);
         tabPane.getTabs().add(plusTab);
 
-        SplitPane splitPane = new SplitPane();
-        splitPane.setOrientation(Orientation.VERTICAL);
-        splitPane.getItems().addAll(tabPane, terminalSetup.createTerminalPane());
-
-        VBox editorBox = new VBox(menuBar, searchBar, splitPane);
-        VBox.setVgrow(splitPane, Priority.ALWAYS);
-
-        scene.setRoot(editorBox);
-
         tabPane.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
             if (newTab == plusTab) {
                 String title = getNextUntitledName();
@@ -62,6 +50,16 @@ public class EditorSetup {
                 tabPane.getSelectionModel().select(newTabToAdd);
             }
         });
+    }
+
+    public VBox createEditorLayout() {
+        SplitPane splitPane = new SplitPane();
+        splitPane.setOrientation(Orientation.VERTICAL);
+        splitPane.getItems().addAll(tabPane, terminalSetup.createTerminalPane());
+
+        VBox editorBox = new VBox(menuBar, searchBar, splitPane);
+        VBox.setVgrow(splitPane, Priority.ALWAYS);
+        return editorBox;
     }
 
     static Tab createNewTab(String title) {

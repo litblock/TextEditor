@@ -91,6 +91,7 @@ public class TextEditor extends Application {
         VBox.setVgrow(commandInput, Priority.NEVER);
 
         BorderPane rootLayout = new BorderPane();
+        rootLayout.setId("rootLayout");
         rootLayout.setTop(menuBar);
         rootLayout.setCenter(mainLayout);
         rootLayout.setBottom(bottomLayout);

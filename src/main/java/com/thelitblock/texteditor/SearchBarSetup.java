@@ -3,6 +3,7 @@ package com.thelitblock.texteditor;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.fxmisc.richtext.CodeArea;
@@ -126,9 +127,13 @@ public class SearchBarSetup {
         if (!searchBar.isVisible()) {
             searchBar.setManaged(true);
             searchBar.setVisible(true);
-            VBox root = (VBox) tabPane.getScene().getRoot().lookup("#rootVBox");
-            if (!root.getChildren().contains(searchBar)) {
-                root.getChildren().add(1, searchBar);
+            BorderPane root = (BorderPane) tabPane.getScene().getRoot().lookup("#rootLayout");
+            if (root != null) {
+                VBox topContainer = new VBox(root.getTop(), searchBar);
+                root.setTop(topContainer);
+            }
+            else {
+                System.err.println("Root layout not found");
             }
             searchText.requestFocus();
         }
@@ -138,9 +143,13 @@ public class SearchBarSetup {
         if (searchBar.isVisible()) {
             searchBar.setManaged(false);
             searchBar.setVisible(false);
-            VBox root = (VBox) tabPane.getScene().getRoot().lookup("#rootVBox");
-            root.getChildren().remove(searchBar);
-            clearHighlights();
+            BorderPane root = (BorderPane) tabPane.getScene().getRoot().lookup("#rootLayout");
+            if (root != null) {
+                VBox topContainer = (VBox) root.getTop();
+                if (topContainer != null && topContainer.getChildren().size() > 1) {
+                    root.setTop(topContainer.getChildren().getFirst());
+                }
+            }
         }
     }
 
